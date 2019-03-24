@@ -28,5 +28,17 @@ int main()
 
     std::cout << determinant(m4) << "\n";
 
+    Matrix4<float> m4_adj = adjugate(m4);
+    std::cout << m4_adj << "\n";;
+
+    Matrix4<float> m4_inv = inverse(m4);
+    std::cout << m4_inv << "\n";
+
+    Matrix4<float> identity = m4 * m4_inv;
+    std::cout << identity << "\n";
+
+    identity = m4_inv * m4;
+    std::cout << identity << "\n";
+
     return 0;
 }

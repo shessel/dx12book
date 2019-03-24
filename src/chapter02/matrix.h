@@ -110,3 +110,77 @@ T determinant(Matrix<T, N> &matrix)
     std::vector<size_t> row_exclude;
     return sub_determinant(matrix, row_exclude, col_exclude);
 }
+
+template <typename T, size_t N>
+Matrix<T, N> adjugate(Matrix<T, N> &matrix)
+{
+    Matrix<T, N> adjugate;
+    T sign;
+    for (size_t row = 0; row < N; ++row)
+    {
+        sign = static_cast<T>(row % 2 == 0 ? 1 : -1);
+        for (size_t col = 0; col < N; ++col)
+        {
+            std::vector<size_t> row_exclude = { row };
+            std::vector<size_t> col_exclude = { col };
+            adjugate[col][row] = sign * sub_determinant(matrix, row_exclude, col_exclude);;
+            sign = -sign;
+        }
+    }
+
+    return adjugate;
+}
+
+template <typename T, size_t N>
+Matrix<T, N>& operator*=(Matrix<T, N> &lhs, const T &rhs)
+{
+    for (size_t col = 0; col < N; ++col)
+    {
+        for (size_t row = 0; row < N; ++row)
+        {
+            lhs[row][col] *= rhs;
+        }
+    }
+    return lhs;
+}
+
+template <typename T, size_t N>
+Matrix<T, N>& operator/=(Matrix<T, N> &lhs, const T &rhs)
+{
+    for (size_t col = 0; col < N; ++col)
+    {
+        for (size_t row = 0; row < N; ++row)
+        {
+            lhs[row][col] /= rhs;
+        }
+    }
+    return lhs;
+}
+
+template <typename T, size_t N>
+Matrix<T, N> operator*(const Matrix<T, N> &lhs, const Matrix<T, N> &rhs)
+{
+    Matrix<T, N> product;
+    for (size_t row_l = 0; row_l < N; ++row_l)
+    {
+        for (size_t col_r = 0; col_r < N; ++col_r)
+        {
+            T element = static_cast<T>(0);
+            for (size_t i = 0; i < N; ++i)
+            {
+                element += lhs[row_l][i] * rhs[i][col_r];
+            }
+            product[row_l][col_r] = element;
+        }
+    }
+    return product;
+}
+
+template <typename T, size_t N>
+Matrix<T, N> inverse(Matrix<T, N> &matrix)
+{
+    T det = determinant(matrix);
+    Matrix<T, N> adj = adjugate(matrix);
+    adj /= det;
+    return adj;
+}
