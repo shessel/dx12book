@@ -6,10 +6,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
+#include "windowsx.h"
 #include "wrl.h"
 #include "dxgi1_6.h"
 #include "d3d12.h"
 
+#include "Timer.h"
 
 inline void ThrowIfFailed(HRESULT hr)
 {
@@ -18,7 +20,6 @@ inline void ThrowIfFailed(HRESULT hr)
         throw std::exception();
     }
 }
-
 LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (msg == WM_DESTROY)
@@ -29,88 +30,6 @@ LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
-
-class Timer
-{
-public:
-    Timer() : 
-        m_baseTime(clock_type::now()),
-        m_prevTime(clock_type::now()),
-        m_curTime(clock_type::now()),
-        m_stopTime(clock_type::now()),
-        m_pausedTime(0),
-        m_delta(0.0f),
-        m_stopped(false)
-    {}
-
-    void reset()
-    {
-        m_baseTime = clock_type::now();
-        m_prevTime = clock_type::now();
-        m_curTime = clock_type::now();
-        m_stopTime = clock_type::now();
-        m_pausedTime = duration(0);
-        m_delta = 0.0f;
-        m_stopped = false;
-    }
-
-    void tick()
-    {
-        m_curTime = clock_type::now();
-        m_delta = std::chrono::duration<float>(m_curTime - m_prevTime).count();
-        m_prevTime = m_curTime;
-    }
-
-    void stop()
-    {
-        if (!m_stopped)
-        {
-            m_stopTime = clock_type::now();
-            m_stopped = true;
-        }
-    }
-
-    void start()
-    {
-        if (m_stopped)
-        {
-            time_point startTime = clock_type::now();
-            m_prevTime = startTime;
-            m_pausedTime += startTime - m_stopTime;
-            m_stopped = false;
-        }
-    }
-
-    float getDelta() const
-    {
-        return m_delta;
-    }
-
-    float getElapsedTime() const
-    {
-        if (m_stopped)
-        {
-            return std::chrono::duration<float>((m_stopTime - m_baseTime) - m_pausedTime).count();
-        }
-        else
-        {
-            return std::chrono::duration<float>((m_curTime - m_baseTime) - m_pausedTime).count();
-        }
-    }
-private:
-    using clock_type = std::chrono::high_resolution_clock;
-    using time_point = std::chrono::time_point<clock_type>;
-    using duration = clock_type::duration;
-    
-    time_point m_baseTime;
-    time_point m_prevTime;
-    time_point m_curTime;
-    time_point m_stopTime;
-    duration m_pausedTime;
-    float m_delta;
-    bool m_stopped;
-
-};
 
 int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
 {
