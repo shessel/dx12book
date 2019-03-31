@@ -236,26 +236,30 @@ int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
 
     UINT currenBackBufferId = 0;
 
+    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainBuffers[swapChainBufferCount];
+    for (UINT i = 0; i < swapChainBufferCount; ++i)
+    {
+        ThrowIfFailed(pSwapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffers[i])));
+        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+        rtvHandle.ptr += i * rtvDescriptorSize;
+
+        // pDesc can be nullptr if resource was not created as typeless
+        pDevice->CreateRenderTargetView(swapChainBuffers[i].Get(), nullptr, rtvHandle);
+    }
+
+    const auto getCurrentBackBuffer = [&]() {
+        return swapChainBuffers[currenBackBufferId];
+    };
+
     const auto getCurrentBackBufferView = [&]() {
         D3D12_CPU_DESCRIPTOR_HANDLE handle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-        handle.ptr += currenBackBufferId*rtvDescriptorSize;
+        handle.ptr += currenBackBufferId * rtvDescriptorSize;
         return handle;
     };
 
     const auto getCurrentDepthStencilView = [&]() {
         return dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     };
-
-    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainBuffers[swapChainBufferCount];
-    for (UINT i = 0; i < swapChainBufferCount; ++i)
-    {
-        ThrowIfFailed(pSwapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffers[i])));
-        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-
-        // pDesc can be nullptr if resource was not created as typeless
-        pDevice->CreateRenderTargetView(swapChainBuffers[i].Get(), nullptr, rtvHandle);
-        rtvHandle.ptr += rtvDescriptorSize;
-    }
 
     Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilBuffer;
     {
@@ -279,7 +283,7 @@ int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
         clearValue.Format = depthStencilFormat;
         clearValue.DepthStencil.Depth = 1.0f;
 
-        ThrowIfFailed(pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(&depthStencilBuffer)));
+        ThrowIfFailed(pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthStencilBuffer)));
 
         // pDesc can be nullptr if resource was not created as typeless
         pDevice->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, getCurrentDepthStencilView());
@@ -290,6 +294,8 @@ int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
     MSG msg = {};
     Timer timer;
     timer.reset();
+    UINT64 frameId = 0;
+
     while (msg.message != WM_QUIT) {
         timer.tick();
 
@@ -302,13 +308,20 @@ int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
         ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
         {
-            D3D12_RESOURCE_BARRIER depthStencilTransition = {};
-            depthStencilTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            depthStencilTransition.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            depthStencilTransition.Transition.pResource = depthStencilBuffer.Get();
-            depthStencilTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-            depthStencilTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-            pCommandList->ResourceBarrier(1, &depthStencilTransition);
+            D3D12_RESOURCE_BARRIER presentToRenderTargetTransition = {};
+            presentToRenderTargetTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            presentToRenderTargetTransition.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            presentToRenderTargetTransition.Transition.pResource = getCurrentBackBuffer().Get();
+            presentToRenderTargetTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+            presentToRenderTargetTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            pCommandList->ResourceBarrier(1, &presentToRenderTargetTransition);
+        }
+
+        {
+            const float clearColorRgba[] = { 0.0f, 0.0f, 0.5f, 1.0f };
+            pCommandList->ClearRenderTargetView(getCurrentBackBufferView(), clearColorRgba, 0, nullptr);
+
+            pCommandList->ClearDepthStencilView(getCurrentDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
         }
 
         {
@@ -329,17 +342,41 @@ int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
         }
 
         {
-            D3D12_RESOURCE_BARRIER depthStencilTransition = {};
-            depthStencilTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            depthStencilTransition.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            depthStencilTransition.Transition.pResource = depthStencilBuffer.Get();
-            depthStencilTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-            depthStencilTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
-            pCommandList->ResourceBarrier(1, &depthStencilTransition);
+            D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = getCurrentBackBufferView();
+            D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = getCurrentDepthStencilView();
+            pCommandList->OMSetRenderTargets(1, &rtvHandle, true, &dsvHandle);
+        }
+
+        {
+            D3D12_RESOURCE_BARRIER renderTargetToPresentTransition = {};
+            renderTargetToPresentTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            renderTargetToPresentTransition.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            renderTargetToPresentTransition.Transition.pResource = getCurrentBackBuffer().Get();
+            renderTargetToPresentTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            renderTargetToPresentTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+            pCommandList->ResourceBarrier(1, &renderTargetToPresentTransition);
         }
 
         ThrowIfFailed(pCommandList->Close());
-        ThrowIfFailed(pCommandAllocator->Reset());
+
+        {
+            ID3D12CommandList* const commandLists[] = { pCommandList.Get() };
+            pCommandQueue->ExecuteCommandLists(1, commandLists);
+        }
+
+        ThrowIfFailed(pSwapChain->Present(0, 0));
+
+        ++frameId;
+        ThrowIfFailed(pCommandQueue->Signal(pFence.Get(), frameId));
+        if (pFence->GetCompletedValue() < frameId)
+        {
+            HANDLE eventHandle = CreateEventEx(nullptr, "Flush Command Queue Event", 0, EVENT_ALL_ACCESS);
+            ThrowIfFailed(pFence->SetEventOnCompletion(frameId, eventHandle));
+            WaitForSingleObject(eventHandle, INFINITE);
+            CloseHandle(eventHandle);
+        }
+
+        currenBackBufferId = (currenBackBufferId + 1) % swapChainBufferCount;
     }
 
     return static_cast<int>(msg.wParam);
