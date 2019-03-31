@@ -11,6 +11,7 @@
 #include "dxgi1_6.h"
 #include "d3d12.h"
 
+#include "AppBase.h"
 #include "Timer.h"
 
 inline void ThrowIfFailed(HRESULT hr)
@@ -297,6 +298,9 @@ int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int show)
 
         currenBackBufferId = (currenBackBufferId + 1) % swapChainBufferCount;
     }
+
+    AppBase app(hinst);
+    app.run();
 
     return static_cast<int>(msg.wParam);
 }

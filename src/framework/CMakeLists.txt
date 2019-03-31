@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
 
 add_library(framework)
-target_sources(framework PRIVATE Timer.cpp)
+target_sources(framework PRIVATE Timer.cpp AppBase.cpp)
 target_compile_features(framework PUBLIC cxx_std_17)
 target_include_directories(framework INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(framework PRIVATE dxgi.lib d3d12.lib)
 
 # adapted from https://arne-mertz.de/2018/07/cmake-properties-options/
 if (MSVC)
