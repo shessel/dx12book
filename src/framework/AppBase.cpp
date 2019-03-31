@@ -142,6 +142,7 @@ int AppBase::run()
             WaitForSingleObject(eventHandle, INFINITE);
             CloseHandle(eventHandle);
         }
+		ThrowIfFailed(m_pCommandAllocator->Reset());
 
         m_currenBackBufferId = (m_currenBackBufferId + 1) % m_swapChainBufferCount;
     }
