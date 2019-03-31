@@ -8,7 +8,7 @@ target_link_libraries(ch04-list-adapters PRIVATE DXGI.lib)
 add_executable(ch04-initialize-d3d12 WIN32)
 target_sources(ch04-initialize-d3d12 PRIVATE ch04-initialize-d3d12.cpp)
 target_compile_features(ch04-initialize-d3d12 PUBLIC cxx_std_17)
-target_link_libraries(ch04-initialize-d3d12 PRIVATE dxgi.lib d3d12.lib framework)
+target_link_libraries(ch04-initialize-d3d12 PRIVATE framework)
 
 # adapted from https://arne-mertz.de/2018/07/cmake-properties-options/
 if (MSVC)
