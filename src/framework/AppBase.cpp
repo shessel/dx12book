@@ -220,16 +220,32 @@ void AppBase::initializeDirect3D()
     }
 }
 
-ID3D12Resource* const AppBase::getCurrentBackBuffer() const {
+ID3D12Resource* const AppBase::getCurrentBackBuffer() const
+{
     return m_swapChainBuffers[m_currenBackBufferId].Get();
 };
 
-D3D12_CPU_DESCRIPTOR_HANDLE AppBase::getCurrentBackBufferView() const {
+D3D12_CPU_DESCRIPTOR_HANDLE AppBase::getCurrentBackBufferView() const
+{
     D3D12_CPU_DESCRIPTOR_HANDLE handle = m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     handle.ptr += m_currenBackBufferId * m_rtvDescriptorSize;
     return handle;
 };
 
-D3D12_CPU_DESCRIPTOR_HANDLE AppBase::getCurrentDepthStencilView() const {
+D3D12_CPU_DESCRIPTOR_HANDLE AppBase::getCurrentDepthStencilView() const
+{
     return m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 };
+
+void AppBase::flushCommandQueue()
+{
+    ++m_flushFenceValue;
+    ThrowIfFailed(m_pCommandQueue->Signal(m_pFence.Get(), m_flushFenceValue));
+    if (m_pFence->GetCompletedValue() < m_flushFenceValue)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, L"Flush Command Queue Event", 0, EVENT_ALL_ACCESS);
+        ThrowIfFailed(m_pFence->SetEventOnCompletion(m_flushFenceValue, eventHandle));
+        WaitForSingleObject(eventHandle, INFINITE);
+        CloseHandle(eventHandle);
+    }
+}

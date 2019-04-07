@@ -25,6 +25,7 @@ protected:
     ID3D12Resource* const getCurrentBackBuffer() const;
     D3D12_CPU_DESCRIPTOR_HANDLE getCurrentBackBufferView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE getCurrentDepthStencilView() const;
+    void flushCommandQueue();
 
     HINSTANCE m_hInstance;
     HWND m_hWnd;
@@ -40,7 +41,7 @@ protected:
     UINT m_cbvSrvUavDescriptorSize;
     UINT m_msaaQualityLevel;
     UINT m_currenBackBufferId = 0;
-    UINT64 m_frameId = 0;
+    UINT64 m_flushFenceValue = 0;
 
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_pCommandQueue;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_pCommandAllocator;

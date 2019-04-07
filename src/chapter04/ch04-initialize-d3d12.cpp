@@ -71,15 +71,7 @@ public:
 
         ThrowIfFailed(m_pSwapChain->Present(0, 0));
 
-        ++m_frameId;
-        ThrowIfFailed(m_pCommandQueue->Signal(m_pFence.Get(), m_frameId));
-        if (m_pFence->GetCompletedValue() < m_frameId)
-        {
-            HANDLE eventHandle = CreateEventEx(nullptr, L"Flush Command Queue Event", 0, EVENT_ALL_ACCESS);
-            ThrowIfFailed(m_pFence->SetEventOnCompletion(m_frameId, eventHandle));
-            WaitForSingleObject(eventHandle, INFINITE);
-            CloseHandle(eventHandle);
-        }
+        flushCommandQueue();
         ThrowIfFailed(m_pCommandAllocator->Reset());
 
         m_currenBackBufferId = (m_currenBackBufferId + 1) % m_swapChainBufferCount;
