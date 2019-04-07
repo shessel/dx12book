@@ -4,7 +4,6 @@
 #include <exception>
 
 #include "DebugUtil.h"
-#include "Timer.h"
 
 namespace
 {
@@ -53,11 +52,10 @@ int AppBase::run()
     ShowWindow(m_hWnd, SW_SHOWDEFAULT);
 
     MSG msg = {};
-    Timer timer;
-    timer.reset();
+    m_timer.reset();
 
     while (msg.message != WM_QUIT) {
-        timer.tick();
+        m_timer.tick();
 
         if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
         {

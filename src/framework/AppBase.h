@@ -8,13 +8,15 @@
 #include "dxgi1_6.h"
 #include "d3d12.h"
 
+#include "Timer.h"
+
 class AppBase
 {
 public:
     AppBase(HINSTANCE hInstance);
 
     int run();
-private:
+protected:
     void createWindow();
     void initializeDirect3D();
     ID3D12Resource* const getCurrentBackBuffer() const;
@@ -47,4 +49,6 @@ private:
     static constexpr UINT m_swapChainBufferCount = 2;
     Microsoft::WRL::ComPtr<ID3D12Resource> m_swapChainBuffers[m_swapChainBufferCount];
     Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
+
+    Timer m_timer;
 };

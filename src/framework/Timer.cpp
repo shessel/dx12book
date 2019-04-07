@@ -1,13 +1,13 @@
 #include "Timer.h"
 
 Timer::Timer() :
-        m_baseTime(clock_type::now()),
-        m_prevTime(clock_type::now()),
-        m_curTime(clock_type::now()),
-        m_stopTime(clock_type::now()),
-        m_pausedTime(0),
-        m_delta(0.0f),
-        m_stopped(false)
+    m_baseTime(clock_type::now()),
+    m_prevTime(clock_type::now()),
+    m_curTime(clock_type::now()),
+    m_stopTime(clock_type::now()),
+    m_pausedTime(0),
+    m_delta(0.0f),
+    m_stopped(true)
 {}
 
 void Timer::reset()
@@ -18,7 +18,6 @@ void Timer::reset()
     m_stopTime = clock_type::now();
     m_pausedTime = duration(0);
     m_delta = 0.0f;
-    m_stopped = false;
 }
 
 void Timer::tick()
