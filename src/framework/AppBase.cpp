@@ -3,6 +3,7 @@
 #include <cassert>
 #include <exception>
 
+#include "DebugUtil.h"
 #include "Timer.h"
 
 namespace
@@ -38,14 +39,6 @@ namespace
         }
 
         return 0;
-    }
-
-    inline void ThrowIfFailed(HRESULT hr)
-    {
-        if (FAILED(hr))
-        {
-            throw std::exception();
-        }
     }
 }
 
@@ -137,7 +130,7 @@ int AppBase::run()
         ThrowIfFailed(m_pCommandQueue->Signal(m_pFence.Get(), m_frameId));
         if (m_pFence->GetCompletedValue() < m_frameId)
         {
-            HANDLE eventHandle = CreateEventEx(nullptr, "Flush Command Queue Event", 0, EVENT_ALL_ACCESS);
+            HANDLE eventHandle = CreateEventEx(nullptr, L"Flush Command Queue Event", 0, EVENT_ALL_ACCESS);
             ThrowIfFailed(m_pFence->SetEventOnCompletion(m_frameId, eventHandle));
             WaitForSingleObject(eventHandle, INFINITE);
             CloseHandle(eventHandle);
@@ -155,10 +148,10 @@ void AppBase::createWindow()
     WNDCLASS windowClass = {};
     windowClass.lpfnWndProc = MsgProc;
     windowClass.hInstance = m_hInstance;
-    windowClass.lpszClassName = "d3dWindow";
+    windowClass.lpszClassName = L"d3dWindow";
     RegisterClass(&windowClass);
 
-    m_hWnd = CreateWindow("d3dWindow", "d3dWindow", WS_OVERLAPPEDWINDOW,
+    m_hWnd = CreateWindow(L"d3dWindow", L"d3dWindow", WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, m_windowWidth, m_windowHeight,
         0, 0, m_hInstance, 0);
 }

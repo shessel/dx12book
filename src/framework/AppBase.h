@@ -29,6 +29,7 @@ private:
     Microsoft::WRL::ComPtr<IDXGIFactory7> m_pFactory;
     Microsoft::WRL::ComPtr<ID3D12Device5> m_pDevice;
     Microsoft::WRL::ComPtr<ID3D12Fence1> m_pFence;
+
     UINT m_rtvDescriptorSize;
     UINT m_dsvDescriptorSize;
     UINT m_cbvSrvUavDescriptorSize;
