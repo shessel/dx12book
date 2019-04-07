@@ -13,7 +13,7 @@ public:
 
     virtual void initialize();
     virtual void update(float /*dt*/) {};
-    virtual void render() {};
+    virtual void render();
 
 protected:
     struct Vertex
@@ -23,7 +23,11 @@ protected:
     };
 
     std::vector<Vertex> m_vertices;
+    std::vector<std::uint16_t> m_indices;
 
-    Microsoft::WRL::ComPtr<ID3D12Resource1> m_vertexBuffer;
-    Microsoft::WRL::ComPtr<ID3D12Resource1> m_vertexBufferUpload;
+    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pVertexBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pVertexBufferUpload;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pIndexBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pIndexBufferUpload;
 };
