@@ -1,5 +1,6 @@
 #include "AppBase.h"
 #include "DebugUtil.h"
+#include "D3D12Util.h"
 
 class InitializeDemo : public AppBase
 {
@@ -13,12 +14,8 @@ public:
         ThrowIfFailed(m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr));
 
         {
-            D3D12_RESOURCE_BARRIER presentToRenderTargetTransition = {};
-            presentToRenderTargetTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            presentToRenderTargetTransition.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            presentToRenderTargetTransition.Transition.pResource = getCurrentBackBuffer();
-            presentToRenderTargetTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-            presentToRenderTargetTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            D3D12_RESOURCE_BARRIER presentToRenderTargetTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),
+                D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
             m_pCommandList->ResourceBarrier(1, &presentToRenderTargetTransition);
         }
 
@@ -53,12 +50,8 @@ public:
         }
 
         {
-            D3D12_RESOURCE_BARRIER renderTargetToPresentTransition = {};
-            renderTargetToPresentTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            renderTargetToPresentTransition.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            renderTargetToPresentTransition.Transition.pResource = getCurrentBackBuffer();
-            renderTargetToPresentTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            renderTargetToPresentTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+            D3D12_RESOURCE_BARRIER renderTargetToPresentTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),
+                D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
             m_pCommandList->ResourceBarrier(1, &renderTargetToPresentTransition);
         }
 

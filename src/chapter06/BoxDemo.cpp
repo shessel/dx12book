@@ -6,6 +6,7 @@
 #include "dxgi.h"
 
 #include "DebugUtil.h"
+#include "D3D12Util.h"
 
 namespace
 {
@@ -96,12 +97,8 @@ void BoxDemo::initialize()
                 reinterpret_cast<ID3D12Resource**>(m_pVertexBuffer.GetAddressOf()),
                 reinterpret_cast<ID3D12Resource**>(m_pVertexBufferUpload.GetAddressOf()));
 
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = m_pVertexBuffer.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-            barrier.Transition.Subresource = 0;
+            const D3D12_RESOURCE_BARRIER barrier = D3D12Util::TransitionBarrier(m_pIndexBuffer.Get(),
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             m_pCommandList->ResourceBarrier(1, &barrier);
         }
 
@@ -138,12 +135,8 @@ void BoxDemo::initialize()
                 reinterpret_cast<ID3D12Resource**>(m_pIndexBuffer.GetAddressOf()),
                 reinterpret_cast<ID3D12Resource**>(m_pIndexBufferUpload.GetAddressOf()));
 
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = m_pIndexBuffer.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_INDEX_BUFFER;
-            barrier.Transition.Subresource = 0;
+            const D3D12_RESOURCE_BARRIER barrier = D3D12Util::TransitionBarrier(m_pIndexBuffer.Get(),
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
             m_pCommandList->ResourceBarrier(1, &barrier);
         }
     }
@@ -177,8 +170,6 @@ void BoxDemo::render()
     m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_indices.size()), 1, 0, 0, 0);
-
-    m_pCommandList->SetPipelineState(&pipelineState);
     
     ThrowIfFailed(m_pCommandList->Close());
 
