@@ -16,6 +16,9 @@ public:
     AppBase(HINSTANCE hInstance);
 
     int run();
+    virtual void initialize() = 0;
+    virtual void update(float dt) = 0;
+    virtual void render() = 0;
 protected:
     void createWindow();
     void initializeDirect3D();

@@ -15,6 +15,7 @@ if (MSVC)
     # warning level 4 and all warnings as errors
     target_compile_options(ch04-list-adapters PRIVATE /W4 /WX /permissive-)
     target_compile_options(ch04-initialize-d3d12 PRIVATE /W4 /WX /permissive-)
+    target_compile_definitions(ch04-initialize-d3d12 PRIVATE UNICODE _UNICODE)
 else()
     # lots of warnings and all warnings as errors
     target_compile_options(ch04-list-adapters PRIVATE -Wall -Wextra -pedantic -Werror)
