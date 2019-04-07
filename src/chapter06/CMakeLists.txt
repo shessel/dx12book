@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 
 add_executable(ch06-box-demo WIN32)
-target_sources(ch06-box-demo PRIVATE ch06-box-demo.cpp)
+target_sources(ch06-box-demo PRIVATE ch06-box-demo.cpp BoxDemo.cpp)
 target_compile_features(ch06-box-demo PRIVATE cxx_std_17)
-target_link_libraries(ch06-box-demo PRIVATE framework)
+target_link_libraries(ch06-box-demo PRIVATE framework DirectXMath)
 
 # adapted from https://arne-mertz.de/2018/07/cmake-properties-options/
 if (MSVC)

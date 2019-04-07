@@ -1,4 +1,4 @@
-#include "ch06-box-demo.h"
+#include "BoxDemo.h"
 #include "DebugUtil.h"
 
 int WinMain(HINSTANCE hinst, HINSTANCE /*hprev*/, LPSTR /*cmdline*/, int /*show*/)
