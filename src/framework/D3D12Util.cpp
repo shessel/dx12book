@@ -26,6 +26,8 @@ namespace D3D12Util
     ConstantBuffer::ConstantBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize)
     {
         const size_t elementSizeMultipleOf256 = (elementSize + 0xffull) & (~0xffull);
+        m_sizeInBytes = static_cast<UINT>(elementCount * elementSize);
+
         D3D12_RESOURCE_DESC desc = {};
         desc.Alignment = 0;
         desc.DepthOrArraySize = 1;
@@ -37,7 +39,7 @@ namespace D3D12Util
         desc.MipLevels = 1;
         desc.SampleDesc.Count = 1;
         desc.SampleDesc.Quality = 0;
-        desc.Width = static_cast<UINT>(elementCount * elementSize);
+        desc.Width = m_sizeInBytes;
 
         D3D12_HEAP_PROPERTIES heapProperties = {};
         heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;

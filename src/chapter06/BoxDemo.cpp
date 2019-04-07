@@ -51,6 +51,24 @@ namespace
 
 void BoxDemo::initialize()
 {
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+        desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        desc.NumDescriptors = 1;
+        desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+
+        ThrowIfFailed(m_pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_pCbvHeap.GetAddressOf())));
+    }
+
+    {
+        m_pConstantBuffer = std::make_unique<D3D12Util::ConstantBuffer>(m_pDevice.Get(), 1, sizeof(PerObjectConstants));
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
+        desc.BufferLocation = m_pConstantBuffer->getResource()->GetGPUVirtualAddress();
+        desc.SizeInBytes = m_pConstantBuffer->getSize();
+        m_pDevice->CreateConstantBufferView(&desc, m_pCbvHeap->GetCPUDescriptorHandleForHeapStart());
+    }
+
     m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
     {
