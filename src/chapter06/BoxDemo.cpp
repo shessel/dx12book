@@ -69,6 +69,36 @@ void BoxDemo::initialize()
         m_pDevice->CreateConstantBufferView(&desc, m_pCbvHeap->GetCPUDescriptorHandleForHeapStart());
     }
 
+	{
+		D3D12_DESCRIPTOR_RANGE1 descriptorRange = {};
+		descriptorRange.BaseShaderRegister = 0;
+		descriptorRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+		descriptorRange.NumDescriptors = 1;
+		descriptorRange.OffsetInDescriptorsFromTableStart = 0; // D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND?
+		descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		descriptorRange.RegisterSpace = 0;
+
+		D3D12_ROOT_PARAMETER1 parameter = {};
+		parameter.DescriptorTable.NumDescriptorRanges = 1;
+		parameter.DescriptorTable.pDescriptorRanges = &descriptorRange;
+		parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		D3D12_ROOT_SIGNATURE_DESC1 rootSignatureDesc = {};
+		rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+		rootSignatureDesc.NumParameters = 1;
+		rootSignatureDesc.pParameters = &parameter;
+		rootSignatureDesc.NumStaticSamplers = 0;
+		rootSignatureDesc.pStaticSamplers = nullptr;
+
+		D3D12_VERSIONED_ROOT_SIGNATURE_DESC versionedRootSignatureDesc = {};
+		versionedRootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+		versionedRootSignatureDesc.Desc_1_1 = rootSignatureDesc;
+
+		Microsoft::WRL::ComPtr<ID3DBlob> pBlob, pErrorBlob;
+		D3D12SerializeVersionedRootSignature(&versionedRootSignatureDesc, &pBlob, &pErrorBlob);
+		m_pDevice->CreateRootSignature(0, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&m_pRootSignature));
+	}
+
     m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
     {
@@ -115,7 +145,7 @@ void BoxDemo::initialize()
                 reinterpret_cast<ID3D12Resource**>(m_pVertexBuffer.GetAddressOf()),
                 reinterpret_cast<ID3D12Resource**>(m_pVertexBufferUpload.GetAddressOf()));
 
-            const D3D12_RESOURCE_BARRIER barrier = D3D12Util::TransitionBarrier(m_pIndexBuffer.Get(),
+            const D3D12_RESOURCE_BARRIER barrier = D3D12Util::TransitionBarrier(m_pVertexBuffer.Get(),
                 D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             m_pCommandList->ResourceBarrier(1, &barrier);
         }
@@ -185,6 +215,11 @@ void BoxDemo::render()
 
         m_pCommandList->ClearDepthStencilView(getCurrentDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     }
+
+	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
+	ID3D12DescriptorHeap* descriptorHeaps = { m_pCbvHeap.Get() };
+	m_pCommandList->SetDescriptorHeaps(sizeof(descriptorHeaps) / sizeof(ID3D12DescriptorHeap*), &descriptorHeaps);
+	m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
     D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
     indexBufferView.BufferLocation = m_pIndexBuffer->GetGPUVirtualAddress();
