@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 add_executable(ch04-list-adapters)
 target_sources(ch04-list-adapters PRIVATE ch04-list-adapters.cpp)
