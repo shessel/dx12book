@@ -189,6 +189,9 @@ void BoxDemo::initialize()
         }
     }
 
+	m_vertexShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "vs", "vs_5_1");
+	m_pixelShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "ps", "ps_5_1");
+
     ThrowIfFailed(m_pCommandList->Close());
 
     {

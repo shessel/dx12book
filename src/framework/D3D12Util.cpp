@@ -1,6 +1,7 @@
 #include "D3D12Util.h"
 
 #include "DebugUtil.h"
+#include "d3dcompiler.h"
 
 namespace D3D12Util
 {
@@ -61,4 +62,23 @@ namespace D3D12Util
     {
         memcpy(m_pMappedBuffer, data, dataSize);
     }
+
+	Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target)
+	{
+		UINT shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#if defined(DEBUG) || defined (_DEBUG)
+		shaderFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+		UINT effectFlags = 0;
+		Microsoft::WRL::ComPtr<ID3DBlob> pCode, pError;
+		HRESULT hr = D3DCompileFromFile(fileName, nullptr, nullptr, entryPoint, target, shaderFlags, effectFlags, pCode.GetAddressOf(), pError.GetAddressOf());
+
+		if (FAILED(hr))
+		{
+			OutputDebugStringA(reinterpret_cast<char*>(pError->GetBufferPointer()));
+			ThrowIfFailed(hr);
+		}
+
+		return pCode;
+	}
 }

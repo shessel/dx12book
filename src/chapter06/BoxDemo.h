@@ -41,4 +41,7 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pCbvHeap;
     std::unique_ptr<D3D12Util::ConstantBuffer> m_pConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
+
+	Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
 };
