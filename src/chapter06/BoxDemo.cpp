@@ -69,38 +69,39 @@ void BoxDemo::initialize()
         m_pDevice->CreateConstantBufferView(&desc, m_pCbvHeap->GetCPUDescriptorHandleForHeapStart());
     }
 
-	{
-		D3D12_DESCRIPTOR_RANGE1 descriptorRange = {};
-		descriptorRange.BaseShaderRegister = 0;
-		descriptorRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
-		descriptorRange.NumDescriptors = 1;
-		descriptorRange.OffsetInDescriptorsFromTableStart = 0; // D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND?
-		descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-		descriptorRange.RegisterSpace = 0;
+    {
+        D3D12_DESCRIPTOR_RANGE1 descriptorRange = {};
+        descriptorRange.BaseShaderRegister = 0;
+        descriptorRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+        descriptorRange.NumDescriptors = 1;
+        descriptorRange.OffsetInDescriptorsFromTableStart = 0; // D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND?
+        descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+        descriptorRange.RegisterSpace = 0;
 
-		D3D12_ROOT_PARAMETER1 parameter = {};
-		parameter.DescriptorTable.NumDescriptorRanges = 1;
-		parameter.DescriptorTable.pDescriptorRanges = &descriptorRange;
-		parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+        D3D12_ROOT_PARAMETER1 parameter = {};
+        parameter.DescriptorTable.NumDescriptorRanges = 1;
+        parameter.DescriptorTable.pDescriptorRanges = &descriptorRange;
+        parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
-		D3D12_ROOT_SIGNATURE_DESC1 rootSignatureDesc = {};
-		rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSignatureDesc.NumParameters = 1;
-		rootSignatureDesc.pParameters = &parameter;
-		rootSignatureDesc.NumStaticSamplers = 0;
-		rootSignatureDesc.pStaticSamplers = nullptr;
+        D3D12_ROOT_SIGNATURE_DESC1 rootSignatureDesc = {};
+        rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+        rootSignatureDesc.NumParameters = 1;
+        rootSignatureDesc.pParameters = &parameter;
+        rootSignatureDesc.NumStaticSamplers = 0;
+        rootSignatureDesc.pStaticSamplers = nullptr;
 
-		D3D12_VERSIONED_ROOT_SIGNATURE_DESC versionedRootSignatureDesc = {};
-		versionedRootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-		versionedRootSignatureDesc.Desc_1_1 = rootSignatureDesc;
+        D3D12_VERSIONED_ROOT_SIGNATURE_DESC versionedRootSignatureDesc = {};
+        versionedRootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+        versionedRootSignatureDesc.Desc_1_1 = rootSignatureDesc;
 
-		Microsoft::WRL::ComPtr<ID3DBlob> pBlob, pErrorBlob;
-		D3D12SerializeVersionedRootSignature(&versionedRootSignatureDesc, &pBlob, &pErrorBlob);
-		m_pDevice->CreateRootSignature(0, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&m_pRootSignature));
-	}
+        Microsoft::WRL::ComPtr<ID3DBlob> pBlob, pErrorBlob;
+        D3D12SerializeVersionedRootSignature(&versionedRootSignatureDesc, &pBlob, &pErrorBlob);
+        m_pDevice->CreateRootSignature(0, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&m_pRootSignature));
+    }
 
     m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
+    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
     {
         D3D12_INPUT_ELEMENT_DESC positionElementDesc = {};
         positionElementDesc.AlignedByteOffset = 0;
@@ -121,7 +122,6 @@ void BoxDemo::initialize()
         colorElementDesc.SemanticIndex = 0;
 
         D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = { positionElementDesc, colorElementDesc };
-        D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
         inputLayoutDesc.NumElements = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
         inputLayoutDesc.pInputElementDescs = inputElementDescs;
     }
@@ -154,8 +154,8 @@ void BoxDemo::initialize()
             m_indices = 
             {
                 // front
-                0, 2, 1,
-                1, 2, 3,
+                0, 1, 2,
+                1, 3, 2,
 
                 // back
                 7, 5, 6,
@@ -174,7 +174,7 @@ void BoxDemo::initialize()
                 1, 4, 5,
 
                 // bottom
-                2, 6, 3,
+                2, 3, 6,
                 6, 3, 7,
             };
 
@@ -189,8 +189,63 @@ void BoxDemo::initialize()
         }
     }
 
-	m_vertexShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "vs", "vs_5_1");
-	m_pixelShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "ps", "ps_5_1");
+    m_pVertexShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "vs", "vs_5_1");
+    m_pPixelShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "ps", "ps_5_1");
+
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
+        desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+        desc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+        desc.RasterizerState.FrontCounterClockwise = FALSE;
+        desc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+        desc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+        desc.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+        desc.RasterizerState.DepthClipEnable = TRUE;
+        desc.RasterizerState.MultisampleEnable = FALSE;
+        desc.RasterizerState.AntialiasedLineEnable = FALSE;
+        desc.RasterizerState.ForcedSampleCount = 0;
+        desc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+        desc.BlendState.AlphaToCoverageEnable = FALSE;
+        desc.BlendState.IndependentBlendEnable = FALSE;
+        D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+        {
+            FALSE,FALSE,
+            D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+            D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+            D3D12_LOGIC_OP_NOOP,
+            D3D12_COLOR_WRITE_ENABLE_ALL,
+        };
+        desc.BlendState.RenderTarget[0] = defaultRenderTargetBlendDesc;
+
+        desc.DepthStencilState.DepthEnable = TRUE;
+        desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+        desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+        desc.DepthStencilState.StencilEnable = FALSE;
+        desc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+        desc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+        const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp =
+            { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+        desc.DepthStencilState.FrontFace = defaultStencilOp;
+        desc.DepthStencilState.BackFace = defaultStencilOp;
+
+        desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+        desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+        desc.InputLayout = inputLayoutDesc;
+        desc.NumRenderTargets = 1;
+        desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+        desc.pRootSignature = m_pRootSignature.Get();
+        desc.PS.BytecodeLength = m_pPixelShader->GetBufferSize();
+        desc.PS.pShaderBytecode = m_pPixelShader->GetBufferPointer();
+        desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+        desc.SampleDesc.Count = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.SampleMask = UINT_MAX;
+        desc.VS.BytecodeLength = m_pVertexShader->GetBufferSize();
+        desc.VS.pShaderBytecode = m_pVertexShader->GetBufferPointer();
+
+        ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineState)));
+    }
 
     ThrowIfFailed(m_pCommandList->Close());
 
@@ -202,9 +257,29 @@ void BoxDemo::initialize()
     flushCommandQueue();
 }
 
+void BoxDemo::update(float dt)
+{
+    PerObjectConstants perObjectConstants = {};
+    static float t = 0.0f;
+    float x, y, z;
+    DirectX::XMScalarSinCos(&x, &z, t);
+    y = 2.0f*x;
+
+    DirectX::XMVECTOR camera = { 2.0f*x, y, 2.0f*z };
+    DirectX::XMVECTOR focus = { 0.0f, 0.0f, 0.0f };
+    DirectX::XMVECTOR up = { 0.0f, 1.0f, 0.0f };
+
+    DirectX::XMStoreFloat4x4(&perObjectConstants.model, DirectX::XMMatrixIdentity());
+    DirectX::XMStoreFloat4x4(&perObjectConstants.view, DirectX::XMMatrixLookAtRH(camera, focus, up));
+    DirectX::XMStoreFloat4x4(&perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(30.0f, static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 5.0f));
+    m_pConstantBuffer->copyData(static_cast<void*>(&perObjectConstants), sizeof(PerObjectConstants));
+
+    t += dt;
+}
+
 void BoxDemo::render()
 {
-    ThrowIfFailed(m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr));
+    ThrowIfFailed(m_pCommandList->Reset(m_pCommandAllocator.Get(), m_pPipelineState.Get()));
 
     {
         D3D12_RESOURCE_BARRIER presentToRenderTargetTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),
@@ -213,16 +288,16 @@ void BoxDemo::render()
     }
 
     {
-        const float clearColorRgba[] = { 0.0f, 0.0f, 0.5f, 1.0f };
+        const float clearColorRgba[] = { 0.0f, 0.2f, 0.4f, 1.0f };
         m_pCommandList->ClearRenderTargetView(getCurrentBackBufferView(), clearColorRgba, 0, nullptr);
 
         m_pCommandList->ClearDepthStencilView(getCurrentDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     }
 
-	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
-	ID3D12DescriptorHeap* descriptorHeaps = { m_pCbvHeap.Get() };
-	m_pCommandList->SetDescriptorHeaps(sizeof(descriptorHeaps) / sizeof(ID3D12DescriptorHeap*), &descriptorHeaps);
-	m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pCbvHeap->GetGPUDescriptorHandleForHeapStart());
+    m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
+    ID3D12DescriptorHeap* descriptorHeaps = { m_pCbvHeap.Get() };
+    m_pCommandList->SetDescriptorHeaps(sizeof(descriptorHeaps) / sizeof(ID3D12DescriptorHeap*), &descriptorHeaps);
+    m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
     D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
     indexBufferView.BufferLocation = m_pIndexBuffer->GetGPUVirtualAddress();
@@ -261,13 +336,13 @@ void BoxDemo::render()
         m_pCommandList->OMSetRenderTargets(1, &rtvHandle, true, &dsvHandle);
     }
 
+    m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_indices.size()), 1, 0, 0, 0);
+
     {
         D3D12_RESOURCE_BARRIER renderTargetToPresentTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),
             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
         m_pCommandList->ResourceBarrier(1, &renderTargetToPresentTransition);
     }
-
-    m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_indices.size()), 1, 0, 0, 0);
     
     ThrowIfFailed(m_pCommandList->Close());
 
@@ -276,9 +351,10 @@ void BoxDemo::render()
         m_pCommandQueue->ExecuteCommandLists(1, commandLists);
     }
 
-    ThrowIfFailed(m_pSwapChain->Present(0, 0));
+    ThrowIfFailed(m_pSwapChain->Present(1, 0));
 
     flushCommandQueue();
+    ThrowIfFailed(m_pCommandAllocator->Reset());
 
     m_currenBackBufferId = (m_currenBackBufferId + 1) % m_swapChainBufferCount;
 }

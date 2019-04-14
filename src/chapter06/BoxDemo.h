@@ -14,7 +14,7 @@ public:
     using AppBase::AppBase;
 
     virtual void initialize();
-    virtual void update(float /*dt*/) {};
+    virtual void update(float dt);
     virtual void render();
 
 protected:
@@ -26,7 +26,9 @@ protected:
 
     struct PerObjectConstants
     {
-        DirectX::XMFLOAT4X4 mvp;
+        DirectX::XMFLOAT4X4 model;
+        DirectX::XMFLOAT4X4 view;
+        DirectX::XMFLOAT4X4 projection;
     };
 
     std::vector<Vertex> m_vertices;
@@ -40,8 +42,10 @@ protected:
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pCbvHeap;
     std::unique_ptr<D3D12Util::ConstantBuffer> m_pConstantBuffer;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 
-	Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
-	Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
+    Microsoft::WRL::ComPtr<ID3DBlob> m_pVertexShader;
+    Microsoft::WRL::ComPtr<ID3DBlob> m_pPixelShader;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineState;
 };

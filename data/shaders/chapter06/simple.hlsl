@@ -1,6 +1,8 @@
 struct CBData
 {
-	float4x4 mat;
+	float4x4 model;
+	float4x4 view;
+	float4x4 projection;
 };
 
 ConstantBuffer<CBData> g_cbData : register(b0);
@@ -20,7 +22,8 @@ struct VertexOutput
 VertexOutput vs(VertexInput vIn)
 {
 	VertexOutput vOut;
-	vOut.position = mul(g_cbData.mat, vIn.position);
+	vOut.position = mul(g_cbData.view, vIn.position);
+	vOut.position = mul(g_cbData.projection, vOut.position);
 	vOut.color = float4(vIn.color, 1.0f);
 	return vOut;
 }

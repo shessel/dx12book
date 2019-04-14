@@ -29,5 +29,5 @@ namespace D3D12Util
         void *m_pMappedBuffer = nullptr;
     };
 
-	Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target);
+    Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target);
 }

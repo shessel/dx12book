@@ -33,6 +33,8 @@ namespace
         case WM_MBUTTONUP:
         case WM_RBUTTONUP:
             break;
+        case WM_MOUSEMOVE:
+            break;
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
         }
