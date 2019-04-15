@@ -95,14 +95,16 @@ void AppBase::initializeDirect3D()
     constexpr UINT msaaSampleCount = 1;
     constexpr D3D_FEATURE_LEVEL minimumFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
+    UINT dxgiFactoryFlags = 0;
     // enable d3d12 debug layers in debug builds
-#ifndef NDEBUG
-    Microsoft::WRL::ComPtr<ID3D12Debug3> debugInterface;
+//#ifndef NDEBUG
+    Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface;
     D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
     debugInterface->EnableDebugLayer();
-#endif
+    dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+//#endif
 
-    CreateDXGIFactory1(IID_PPV_ARGS(&m_pFactory));
+    CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_pFactory));
 
     // try to create device with minimum feature level
     HRESULT hr = D3D12CreateDevice(nullptr, minimumFeatureLevel, IID_PPV_ARGS(&m_pDevice));
@@ -165,7 +167,9 @@ void AppBase::initializeDirect3D()
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.Windowed = true;
 
-        ThrowIfFailed(m_pFactory->CreateSwapChain(m_pCommandQueue.Get(), &desc, &m_pSwapChain));
+        Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain;
+        ThrowIfFailed(m_pFactory->CreateSwapChain(m_pCommandQueue.Get(), &desc, &swapChain));
+        ThrowIfFailed(swapChain.As(&m_pSwapChain));
     }
 
     {

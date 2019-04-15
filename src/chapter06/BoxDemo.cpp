@@ -101,31 +101,6 @@ void BoxDemo::initialize()
 
     m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
-    {
-        D3D12_INPUT_ELEMENT_DESC positionElementDesc = {};
-        positionElementDesc.AlignedByteOffset = 0;
-        positionElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-        positionElementDesc.InputSlot = 0;
-        positionElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-        positionElementDesc.InstanceDataStepRate = 0;
-        positionElementDesc.SemanticName = "POSITION";
-        positionElementDesc.SemanticIndex = 0;
-
-        D3D12_INPUT_ELEMENT_DESC colorElementDesc = {};
-        colorElementDesc.AlignedByteOffset = 12;
-        colorElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-        colorElementDesc.InputSlot = 0;
-        colorElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-        colorElementDesc.InstanceDataStepRate = 0;
-        colorElementDesc.SemanticName = "COLOR";
-        colorElementDesc.SemanticIndex = 0;
-
-        D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = { positionElementDesc, colorElementDesc };
-        inputLayoutDesc.NumElements = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-        inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    }
-
     {
         {
             m_vertices =
@@ -193,6 +168,29 @@ void BoxDemo::initialize()
     m_pPixelShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "ps", "ps_5_1");
 
     {
+        D3D12_INPUT_ELEMENT_DESC positionElementDesc = {};
+        positionElementDesc.AlignedByteOffset = 0;
+        positionElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+        positionElementDesc.InputSlot = 0;
+        positionElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        positionElementDesc.InstanceDataStepRate = 0;
+        positionElementDesc.SemanticName = "POSITION";
+        positionElementDesc.SemanticIndex = 0;
+
+        D3D12_INPUT_ELEMENT_DESC colorElementDesc = {};
+        colorElementDesc.AlignedByteOffset = 12;
+        colorElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+        colorElementDesc.InputSlot = 0;
+        colorElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        colorElementDesc.InstanceDataStepRate = 0;
+        colorElementDesc.SemanticName = "COLOR";
+        colorElementDesc.SemanticIndex = 0;
+
+        D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = { positionElementDesc, colorElementDesc };
+        D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
+        inputLayoutDesc.NumElements = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
+        inputLayoutDesc.pInputElementDescs = inputElementDescs;
+
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
         desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
         desc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
@@ -279,6 +277,7 @@ void BoxDemo::update(float dt)
 
 void BoxDemo::render()
 {
+    ThrowIfFailed(m_pCommandAllocator->Reset());
     ThrowIfFailed(m_pCommandList->Reset(m_pCommandAllocator.Get(), m_pPipelineState.Get()));
 
     {
@@ -353,8 +352,8 @@ void BoxDemo::render()
 
     ThrowIfFailed(m_pSwapChain->Present(1, 0));
 
-    flushCommandQueue();
-    ThrowIfFailed(m_pCommandAllocator->Reset());
-
+    // use GetCurrentBackBufferIndex?
     m_currenBackBufferId = (m_currenBackBufferId + 1) % m_swapChainBufferCount;
+
+    flushCommandQueue();
 }

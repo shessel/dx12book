@@ -46,7 +46,7 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_pCommandQueue;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_pCommandAllocator;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> m_pCommandList;
-    Microsoft::WRL::ComPtr<IDXGISwapChain> m_pSwapChain;
+    Microsoft::WRL::ComPtr<IDXGISwapChain4> m_pSwapChain;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_rtvDescriptorHeap;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_dsvDescriptorHeap;
 
