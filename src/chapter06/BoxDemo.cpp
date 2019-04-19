@@ -255,24 +255,25 @@ void BoxDemo::initialize()
     flushCommandQueue();
 }
 
-void BoxDemo::update(float dt)
+void BoxDemo::update(float /*dt*/)
 {
-    PerObjectConstants perObjectConstants = {};
-    static float t = 0.0f;
-    float x, y, z;
-    DirectX::XMScalarSinCos(&x, &z, t);
-    y = 2.0f*x;
+    float sinPhi, cosPhi, sinTheta, cosTheta;
+    DirectX::XMScalarSinCos(&sinPhi, &cosPhi, m_camAnglePhi);
+    DirectX::XMScalarSinCos(&sinTheta, &cosTheta, m_camAngleTheta);
 
-    DirectX::XMVECTOR camera = { 2.0f*x, y, 2.0f*z };
+    float x = m_camDistance * sinPhi * cosTheta;
+    float y = m_camDistance * sinTheta;
+    float z = m_camDistance * cosPhi * cosTheta;;
+
+    DirectX::XMVECTOR camera = { x, y, z };
     DirectX::XMVECTOR focus = { 0.0f, 0.0f, 0.0f };
     DirectX::XMVECTOR up = { 0.0f, 1.0f, 0.0f };
 
+    PerObjectConstants perObjectConstants = {};
     DirectX::XMStoreFloat4x4(&perObjectConstants.model, DirectX::XMMatrixIdentity());
     DirectX::XMStoreFloat4x4(&perObjectConstants.view, DirectX::XMMatrixLookAtRH(camera, focus, up));
     DirectX::XMStoreFloat4x4(&perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(30.0f, static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 5.0f));
     m_pConstantBuffer->copyData(static_cast<void*>(&perObjectConstants), sizeof(PerObjectConstants));
-
-    t += dt;
 }
 
 void BoxDemo::render()
@@ -356,4 +357,38 @@ void BoxDemo::render()
     m_currenBackBufferId = (m_currenBackBufferId + 1) % m_swapChainBufferCount;
 
     flushCommandQueue();
+}
+
+void BoxDemo::onMouseDown(int16_t xPos, int16_t yPos, uint8_t /*buttons*/)
+{
+    m_curMouseX = m_lastMouseX = xPos;
+    m_curMouseY = m_lastMouseY = yPos;
+}
+
+void BoxDemo::onMouseUp(int16_t xPos, int16_t yPos, uint8_t /*buttons*/)
+{
+    m_curMouseX = m_lastMouseX = xPos;
+    m_curMouseY = m_lastMouseY = yPos;
+}
+
+void BoxDemo::onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons)
+{
+    m_curMouseX = xPos;
+    m_curMouseY = yPos;
+    int16_t dMouseX = m_curMouseX - m_lastMouseX;
+    int16_t dMouseY = m_curMouseY - m_lastMouseY;
+    if (buttons & MouseButton::Left)
+    {
+        m_camAnglePhi += 0.02f * dMouseX;
+        m_camAngleTheta += 0.02f * -dMouseY;
+        m_camAngleTheta = std::fmax(m_camAngleTheta, -DirectX::XM_PIDIV2 + 0.001f);
+        m_camAngleTheta = std::fmin(m_camAngleTheta, DirectX::XM_PIDIV2 - 0.001f);
+    }
+    if (buttons & MouseButton::Right)
+    {
+        m_camDistance += 0.02f * dMouseY;
+        m_camDistance = max(m_camDistance, 0.1f); 
+    }
+    m_lastMouseX = m_curMouseX;
+    m_lastMouseY = m_curMouseY;
 }

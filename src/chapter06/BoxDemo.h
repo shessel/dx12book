@@ -13,9 +13,12 @@ class BoxDemo : public AppBase
 public:
     using AppBase::AppBase;
 
-    virtual void initialize();
-    virtual void update(float dt);
-    virtual void render();
+    virtual void initialize() override;
+    virtual void update(float dt) override;
+    virtual void render() override;
+    virtual void onMouseDown(int16_t xPos, int16_t yPos, uint8_t buttons) override;
+    virtual void onMouseUp(int16_t xPos, int16_t yPos, uint8_t buttons) override;
+    virtual void onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons) override;
 
 protected:
     struct Vertex
@@ -48,4 +51,12 @@ protected:
     Microsoft::WRL::ComPtr<ID3DBlob> m_pPixelShader;
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineState;
+
+    int16_t m_lastMouseX = 0;
+    int16_t m_lastMouseY = 0;
+    int16_t m_curMouseX = 0;
+    int16_t m_curMouseY = 0;
+    float m_camAnglePhi = 0.0f;
+    float m_camAngleTheta = 0.0f;
+    float m_camDistance = 1.1f;
 };
