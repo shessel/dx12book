@@ -7,6 +7,8 @@
 
 namespace
 {
+    static AppBase* s_pAppInstance = nullptr;
+
     LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         switch (msg)
@@ -26,14 +28,36 @@ namespace
         case WM_LBUTTONDOWN:
         case WM_MBUTTONDOWN:
         case WM_RBUTTONDOWN:
-            // mouse down
-            // GET_X_LPARAM(lParam)
+            if (s_pAppInstance)
+            {
+                uint8_t buttons = 0u;
+                if (wParam & MK_LBUTTON) buttons |= AppBase::MouseButton::Left;
+                if (wParam & MK_MBUTTON) buttons |= AppBase::MouseButton::Middle;
+                if (wParam & MK_RBUTTON) buttons |= AppBase::MouseButton::Right;
+                s_pAppInstance->onMouseDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), buttons);
+            }
             break;
         case WM_LBUTTONUP:
         case WM_MBUTTONUP:
         case WM_RBUTTONUP:
+            if (s_pAppInstance)
+            {
+                uint8_t buttons = 0u;
+                if (wParam & MK_LBUTTON) buttons |= AppBase::MouseButton::Left;
+                if (wParam & MK_MBUTTON) buttons |= AppBase::MouseButton::Middle;
+                if (wParam & MK_RBUTTON) buttons |= AppBase::MouseButton::Right;
+                s_pAppInstance->onMouseUp(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), buttons);
+            }
             break;
         case WM_MOUSEMOVE:
+            if (s_pAppInstance)
+            {
+                uint8_t buttons = 0u;
+                if (wParam & MK_LBUTTON) buttons |= AppBase::MouseButton::Left;
+                if (wParam & MK_MBUTTON) buttons |= AppBase::MouseButton::Middle;
+                if (wParam & MK_RBUTTON) buttons |= AppBase::MouseButton::Right;
+                s_pAppInstance->onMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), buttons);
+            }
             break;
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -45,8 +69,14 @@ namespace
 
 AppBase::AppBase(HINSTANCE hInstance) : m_hInstance(hInstance)
 {
+    s_pAppInstance = this;
     createWindow();
     initializeDirect3D();
+}
+
+AppBase::~AppBase()
+{
+    s_pAppInstance = nullptr;
 }
 
 int AppBase::run()

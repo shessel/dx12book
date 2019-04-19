@@ -14,11 +14,26 @@ class AppBase
 {
 public:
     AppBase(HINSTANCE hInstance);
+    ~AppBase();
+    AppBase(const AppBase& other) = delete;
+    AppBase(AppBase&& other) = delete;
+    AppBase& operator=(const AppBase& other) = delete;
+    AppBase& operator=(AppBase&& other) = delete;
+
+    enum MouseButton : uint8_t
+    {
+        Left = 1u,
+        Middle = 1u << 1u,
+        Right = 1u << 2u,
+    };
 
     int run();
     virtual void initialize() = 0;
     virtual void update(float dt) = 0;
     virtual void render() = 0;
+    virtual void onMouseDown(int16_t xPos, int16_t yPos, uint8_t buttons) = 0;
+    virtual void onMouseUp(int16_t xPos, int16_t yPos, uint8_t buttons) = 0;
+    virtual void onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons) = 0;
 protected:
     void createWindow();
     void initializeDirect3D();
