@@ -116,7 +116,6 @@ void AppBase::createWindow()
         0, 0, m_hInstance, 0);
 }
 
-
 void AppBase::initializeDirect3D()
 {
     // general config
@@ -127,12 +126,12 @@ void AppBase::initializeDirect3D()
 
     UINT dxgiFactoryFlags = 0;
     // enable d3d12 debug layers in debug builds
-//#ifndef NDEBUG
+#ifndef NDEBUG
     Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface;
     D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
     debugInterface->EnableDebugLayer();
     dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-//#endif
+#endif
 
     CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_pFactory));
 

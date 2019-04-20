@@ -8,47 +8,6 @@
 #include "DebugUtil.h"
 #include "D3D12Util.h"
 
-namespace
-{
-    void createAndUploadBuffer(void* data, size_t dataSize, ID3D12Device* const device,
-        ID3D12GraphicsCommandList* const commandList, ID3D12Resource** buffer, ID3D12Resource** uploadBuffer)
-    {
-        D3D12_HEAP_PROPERTIES heapProperties = {};
-        heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-        D3D12_RESOURCE_DESC desc = {};
-        desc.Alignment = 0;
-        desc.DepthOrArraySize = 1;
-        desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-        desc.Format = DXGI_FORMAT_UNKNOWN;
-        desc.Height = 1;
-        desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        desc.MipLevels = 1;
-        desc.SampleDesc.Count = 1;
-        desc.SampleDesc.Quality = 0;
-        desc.Width = dataSize;
-
-        ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc,
-            D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(buffer)));
-
-        heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-        ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc,
-            D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(uploadBuffer)));
-
-        void* mappedBufferUpload = nullptr;
-        // a range where end <= begin specifies no CPU read.
-        // see https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12resource-map
-        D3D12_RANGE readRangeNoRead{ 0,0 };
-        ThrowIfFailed((*uploadBuffer)->Map(0, &readRangeNoRead,&mappedBufferUpload));
-        memcpy(mappedBufferUpload, data, dataSize);
-        // nullptr range specifies the CPU might have written to the whole resource
-        (*uploadBuffer)->Unmap(0, nullptr);
-
-        commandList->CopyResource(*buffer, *uploadBuffer);
-    }
-}
-
 void BoxDemo::initialize()
 {
     {
@@ -101,71 +60,56 @@ void BoxDemo::initialize()
 
     m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
+    m_pMesh = std::make_unique<Mesh>();
     {
+        std::vector<Vertex> vertices =
         {
-            m_vertices =
-            {
-                {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)},
-                {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f)},
-                {DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)},
-                {DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f)},
-                {DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f)},
-                {DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f)},
-                {DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f)},
-                {DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)},
-            };
+            {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)},
+            {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f)},
+            {DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)},
+            {DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f)},
+            {DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f)},
+            {DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f)},
+            {DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f)},
+            {DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)},
+        };
 
-            createAndUploadBuffer(m_vertices.data(), m_vertices.size() * sizeof(Vertex),
-                m_pDevice.Get(), m_pCommandList.Get(),
-                reinterpret_cast<ID3D12Resource**>(m_pVertexBuffer.GetAddressOf()),
-                reinterpret_cast<ID3D12Resource**>(m_pVertexBufferUpload.GetAddressOf()));
-
-            const D3D12_RESOURCE_BARRIER barrier = D3D12Util::TransitionBarrier(m_pVertexBuffer.Get(),
-                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            m_pCommandList->ResourceBarrier(1, &barrier);
-        }
-
-        {
-            m_indices = 
-            {
-                // front
-                0, 1, 2,
-                1, 3, 2,
-
-                // back
-                7, 5, 6,
-                6, 5, 4,
-
-                // left
-                0, 2, 6,
-                4, 0, 6,
-
-                // right
-                3, 1, 7,
-                7, 1, 5,
-
-                // top
-                1, 0, 4,
-                1, 4, 5,
-
-                // bottom
-                2, 3, 6,
-                6, 3, 7,
-            };
-
-            createAndUploadBuffer(m_indices.data(), m_indices.size() * sizeof(std::uint16_t),
-                m_pDevice.Get(), m_pCommandList.Get(),
-                reinterpret_cast<ID3D12Resource**>(m_pIndexBuffer.GetAddressOf()),
-                reinterpret_cast<ID3D12Resource**>(m_pIndexBufferUpload.GetAddressOf()));
-
-            const D3D12_RESOURCE_BARRIER barrier = D3D12Util::TransitionBarrier(m_pIndexBuffer.Get(),
-                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-            m_pCommandList->ResourceBarrier(1, &barrier);
-        }
+        m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), sizeof(Vertex), m_pCommandList.Get());
     }
 
-    m_pVertexShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "vs", "vs_5_1");
-    m_pPixelShader = D3D12Util::CompileShader(L"data/shaders/chapter06/simple.hlsl", "ps", "ps_5_1");
+    {
+        std::vector<std::uint16_t> indices =
+        {
+            // front
+            0, 1, 2,
+            1, 3, 2,
+
+            // back
+            7, 5, 6,
+            6, 5, 4,
+
+            // left
+            0, 2, 6,
+            4, 0, 6,
+
+            // right
+            3, 1, 7,
+            7, 1, 5,
+
+            // top
+            1, 0, 4,
+            1, 4, 5,
+
+            // bottom
+            2, 3, 6,
+            6, 3, 7,
+        };
+
+        m_pMesh->createIndexBuffer(indices.data(), indices.size(), sizeof(std::uint16_t), m_pCommandList.Get());
+    }
+
+    m_pVertexShader = D3D12Util::compileShader(L"data/shaders/chapter06/simple.hlsl", "vs", "vs_5_1");
+    m_pPixelShader = D3D12Util::compileShader(L"data/shaders/chapter06/simple.hlsl", "ps", "ps_5_1");
 
     {
         D3D12_INPUT_ELEMENT_DESC positionElementDesc = {};
@@ -272,7 +216,7 @@ void BoxDemo::update(float /*dt*/)
     PerObjectConstants perObjectConstants = {};
     DirectX::XMStoreFloat4x4(&perObjectConstants.model, DirectX::XMMatrixIdentity());
     DirectX::XMStoreFloat4x4(&perObjectConstants.view, DirectX::XMMatrixLookAtRH(camera, focus, up));
-    DirectX::XMStoreFloat4x4(&perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(30.0f, static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 5.0f));
+    DirectX::XMStoreFloat4x4(&perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(30.0f, static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 10.0f));
     m_pConstantBuffer->copyData(static_cast<void*>(&perObjectConstants), sizeof(PerObjectConstants));
 }
 
@@ -295,20 +239,15 @@ void BoxDemo::render()
     }
 
     m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
+
     ID3D12DescriptorHeap* descriptorHeaps = { m_pCbvHeap.Get() };
     m_pCommandList->SetDescriptorHeaps(sizeof(descriptorHeaps) / sizeof(ID3D12DescriptorHeap*), &descriptorHeaps);
     m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-    D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
-    indexBufferView.BufferLocation = m_pIndexBuffer->GetGPUVirtualAddress();
-    indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-    indexBufferView.SizeInBytes = static_cast<UINT>(m_indices.size() * sizeof(std::uint16_t));
+    D3D12_INDEX_BUFFER_VIEW indexBufferView = m_pMesh->getIndexBufferView();
     m_pCommandList->IASetIndexBuffer(&indexBufferView);
 
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
-    vertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
-    vertexBufferView.SizeInBytes = static_cast<UINT>(m_vertices.size() * sizeof(Vertex));
-    vertexBufferView.StrideInBytes = sizeof(Vertex);
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView = m_pMesh->getVertexBufferView();
     m_pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
     m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -336,7 +275,7 @@ void BoxDemo::render()
         m_pCommandList->OMSetRenderTargets(1, &rtvHandle, true, &dsvHandle);
     }
 
-    m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_indices.size()), 1, 0, 0, 0);
+    m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_pMesh->m_indexCount), 1, 0, 0, 0);
 
     {
         D3D12_RESOURCE_BARRIER renderTargetToPresentTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),

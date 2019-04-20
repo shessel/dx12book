@@ -63,7 +63,7 @@ namespace D3D12Util
         memcpy(m_pMappedBuffer, data, dataSize);
     }
 
-    Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target)
+    Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target)
     {
         UINT shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #if defined(DEBUG) || defined (_DEBUG)
@@ -80,5 +80,44 @@ namespace D3D12Util
         }
 
         return pCode;
+    }
+    void createAndUploadBuffer(const void* const data, const size_t dataSize, ID3D12GraphicsCommandList* const commandList, ID3D12Resource** buffer, ID3D12Resource** uploadBuffer)
+    {
+        D3D12_HEAP_PROPERTIES heapProperties = {};
+        heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+        D3D12_RESOURCE_DESC desc = {};
+        desc.Alignment = 0;
+        desc.DepthOrArraySize = 1;
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        desc.Format = DXGI_FORMAT_UNKNOWN;
+        desc.Height = 1;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        desc.MipLevels = 1;
+        desc.SampleDesc.Count = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.Width = dataSize;
+
+        Microsoft::WRL::ComPtr<ID3D12Device> pDevice;
+        ThrowIfFailed(commandList->GetDevice(IID_PPV_ARGS(&pDevice)));
+
+        ThrowIfFailed(pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc,
+            D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(buffer)));
+
+        heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+        ThrowIfFailed(pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc,
+            D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(uploadBuffer)));
+
+        void* mappedBufferUpload = nullptr;
+        // a range where end <= begin specifies no CPU read.
+        // see https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12resource-map
+        D3D12_RANGE readRangeNoRead{ 0,0 };
+        ThrowIfFailed((*uploadBuffer)->Map(0, &readRangeNoRead, &mappedBufferUpload));
+        memcpy(mappedBufferUpload, data, dataSize);
+        // nullptr range specifies the CPU might have written to the whole resource
+        (*uploadBuffer)->Unmap(0, nullptr);
+
+        commandList->CopyResource(*buffer, *uploadBuffer);
     }
 }

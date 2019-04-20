@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AppBase.h"
+#include "Mesh.h"
 
 #include <memory>
 #include <vector>
@@ -34,14 +35,7 @@ protected:
         DirectX::XMFLOAT4X4 projection;
     };
 
-    std::vector<Vertex> m_vertices;
-    std::vector<std::uint16_t> m_indices;
-
-    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pVertexBuffer;
-    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pVertexBufferUpload;
-
-    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pIndexBuffer;
-    Microsoft::WRL::ComPtr<ID3D12Resource1> m_pIndexBufferUpload;
+    std::unique_ptr<Mesh> m_pMesh;
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pCbvHeap;
     std::unique_ptr<D3D12Util::ConstantBuffer> m_pConstantBuffer;
@@ -58,5 +52,5 @@ protected:
     int16_t m_curMouseY = 0;
     float m_camAnglePhi = 0.0f;
     float m_camAngleTheta = 0.0f;
-    float m_camDistance = 1.1f;
+    float m_camDistance = 3.0f;
 };
