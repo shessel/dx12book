@@ -62,19 +62,35 @@ void BoxDemo::initialize()
 
     m_pMesh = std::make_unique<Mesh>();
     {
-        std::vector<Vertex> vertices =
+        std::vector<DirectX::XMFLOAT3> vertices =
         {
-            {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)},
-            {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f)},
-            {DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)},
-            {DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f)},
-            {DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f)},
-            {DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f)},
-            {DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f)},
-            {DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)},
+            DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f),
+            DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f),
+            DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f),
+            DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f),
+            DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f),
+            DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f),
+            DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f),
+            DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f),
         };
 
-        m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), sizeof(Vertex), m_pCommandList.Get());
+        m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
+    }
+
+    {
+        std::vector<DirectX::XMFLOAT3> colors =
+        {
+            DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+            DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+            DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
+            DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
+            DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
+            DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f),
+            DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f),
+            DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f),
+        };
+
+        m_pMesh->createVertexBuffer(colors.data(), colors.size(), sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 1);
     }
 
     {
@@ -122,9 +138,9 @@ void BoxDemo::initialize()
         positionElementDesc.SemanticIndex = 0;
 
         D3D12_INPUT_ELEMENT_DESC colorElementDesc = {};
-        colorElementDesc.AlignedByteOffset = 12;
+        colorElementDesc.AlignedByteOffset = 0;
         colorElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-        colorElementDesc.InputSlot = 0;
+        colorElementDesc.InputSlot = 1;
         colorElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         colorElementDesc.InstanceDataStepRate = 0;
         colorElementDesc.SemanticName = "COLOR";
@@ -240,15 +256,17 @@ void BoxDemo::render()
 
     m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
 
-    ID3D12DescriptorHeap* descriptorHeaps = { m_pCbvHeap.Get() };
+    ID3D12DescriptorHeap* const descriptorHeaps = { m_pCbvHeap.Get() };
     m_pCommandList->SetDescriptorHeaps(sizeof(descriptorHeaps) / sizeof(ID3D12DescriptorHeap*), &descriptorHeaps);
     m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-    D3D12_INDEX_BUFFER_VIEW indexBufferView = m_pMesh->getIndexBufferView();
+    const D3D12_INDEX_BUFFER_VIEW indexBufferView = m_pMesh->getIndexBufferView();
     m_pCommandList->IASetIndexBuffer(&indexBufferView);
 
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView = m_pMesh->getVertexBufferView();
-    m_pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+    const D3D12_VERTEX_BUFFER_VIEW vertexBufferViewVertices = m_pMesh->getVertexBufferView(0);
+    const D3D12_VERTEX_BUFFER_VIEW vertexBufferViewColors = m_pMesh->getVertexBufferView(1);
+    const D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[] = { vertexBufferViewVertices, vertexBufferViewColors };
+    m_pCommandList->IASetVertexBuffers(0, 2, vertexBufferViews);
 
     m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
