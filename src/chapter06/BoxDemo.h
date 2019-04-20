@@ -33,6 +33,7 @@ protected:
         DirectX::XMFLOAT4X4 model;
         DirectX::XMFLOAT4X4 view;
         DirectX::XMFLOAT4X4 projection;
+        float time;
     };
 
     std::unique_ptr<Mesh> m_pMesh;

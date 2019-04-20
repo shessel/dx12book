@@ -85,6 +85,7 @@ int AppBase::run()
 
     MSG msg = {};
     m_timer.reset();
+    m_timer.start();
     initialize();
 
     while (msg.message != WM_QUIT) {
