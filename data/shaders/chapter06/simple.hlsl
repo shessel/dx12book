@@ -23,9 +23,10 @@ struct VertexOutput
 VertexOutput vs(VertexInput vIn)
 {
 	VertexOutput vOut;
-	vIn.position.xy += 0.5f*sin(vIn.position.x)*sin(3.0f*g_cbData.time);
-	vIn.position.z *= 0.6f + 0.4f*sin(2.0f*g_cbData.time);
-	vOut.position = mul(g_cbData.view, vIn.position);
+	//vIn.position.xy += 0.5f*sin(vIn.position.x)*sin(3.0f*g_cbData.time);
+	//vIn.position.z *= 0.6f + 0.4f*sin(2.0f*g_cbData.time);
+	vOut.position = mul(g_cbData.model, vIn.position);
+	vOut.position = mul(g_cbData.view, vOut.position);
 	vOut.position = mul(g_cbData.projection, vOut.position);
 	vOut.color = float4(vIn.color, 1.0f);
 	return vOut;

@@ -64,14 +64,22 @@ void BoxDemo::initialize()
     {
         std::vector<DirectX::XMFLOAT3> vertices =
         {
-            DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f),
-            DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f),
-            DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f),
-            DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f),
-            DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f),
-            DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f),
-            DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f),
-            DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f),
+            // cube
+            DirectX::XMFLOAT3(-2.0f, -1.0f, -1.0f),
+            DirectX::XMFLOAT3( 0.0f, -1.0f, -1.0f),
+            DirectX::XMFLOAT3(-2.0f,  1.0f, -1.0f),
+            DirectX::XMFLOAT3( 0.0f,  1.0f, -1.0f),
+            DirectX::XMFLOAT3(-2.0f, -1.0f,  1.0f),
+            DirectX::XMFLOAT3( 0.0f, -1.0f,  1.0f),
+            DirectX::XMFLOAT3(-2.0f,  1.0f,  1.0f),
+            DirectX::XMFLOAT3( 0.0f,  1.0f,  1.0f),
+
+            // pyramid
+            DirectX::XMFLOAT3(0.0f, -1.0f, -1.0f),
+            DirectX::XMFLOAT3(2.0f, -1.0f, -1.0f),
+            DirectX::XMFLOAT3(0.0f, -1.0f,  1.0f),
+            DirectX::XMFLOAT3(2.0f, -1.0f,  1.0f),
+            DirectX::XMFLOAT3(1.0f,  1.0f,  0.0f),
         };
 
         m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
@@ -80,6 +88,7 @@ void BoxDemo::initialize()
     {
         std::vector<DirectX::XMFLOAT3> colors =
         {
+            // cube
             DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
             DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
             DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
@@ -88,6 +97,13 @@ void BoxDemo::initialize()
             DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f),
             DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f),
             DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f),
+
+            // pyramid
+            DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+            DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+            DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
+            DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
+            DirectX::XMFLOAT3(0.5f, 0.5f, 1.0f),
         };
 
         m_pMesh->createVertexBuffer(colors.data(), colors.size(), sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 1);
@@ -96,29 +112,42 @@ void BoxDemo::initialize()
     {
         std::vector<std::uint16_t> indices =
         {
-            // front
+            // cube front
             0, 1, 2,
             1, 3, 2,
 
-            // back
+            // cube back
             7, 5, 6,
             6, 5, 4,
 
-            // left
+            // cube left
             0, 2, 6,
             4, 0, 6,
 
-            // right
+            // cube right
             3, 1, 7,
             7, 1, 5,
 
-            // top
+            // cube top
             1, 0, 4,
             1, 4, 5,
 
-            // bottom
+            // cube bottom
             2, 3, 6,
             6, 3, 7,
+
+            // pyramid bottom
+            0, 2, 1,
+            2, 3, 1,
+
+            // pyramid front
+            4, 0, 1,
+            // pyramid right
+            4, 1, 3,
+            // pyramid back
+            4, 3, 2,
+            // pyramid left
+            4, 2, 0,
         };
 
         m_pMesh->createIndexBuffer(indices.data(), indices.size(), sizeof(std::uint16_t), m_pCommandList.Get());
@@ -229,12 +258,11 @@ void BoxDemo::update(float /*dt*/)
     DirectX::XMVECTOR focus = { 0.0f, 0.0f, 0.0f };
     DirectX::XMVECTOR up = { 0.0f, 1.0f, 0.0f };
 
-    PerObjectConstants perObjectConstants = {};
-    DirectX::XMStoreFloat4x4(&perObjectConstants.model, DirectX::XMMatrixIdentity());
-    DirectX::XMStoreFloat4x4(&perObjectConstants.view, DirectX::XMMatrixLookAtRH(camera, focus, up));
-    DirectX::XMStoreFloat4x4(&perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(30.0f, static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 10.0f));
-    perObjectConstants.time = m_timer.getElapsedTime();
-    m_pConstantBuffer->copyData(static_cast<void*>(&perObjectConstants), sizeof(PerObjectConstants));
+    DirectX::XMStoreFloat4x4(&m_perObjectConstants.model, DirectX::XMMatrixIdentity());
+    DirectX::XMStoreFloat4x4(&m_perObjectConstants.view, DirectX::XMMatrixLookAtRH(camera, focus, up));
+    DirectX::XMStoreFloat4x4(&m_perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 10.0f));
+    m_perObjectConstants.time = m_timer.getElapsedTime();
+    m_pConstantBuffer->copyData(static_cast<void*>(&m_perObjectConstants), sizeof(PerObjectConstants));
 }
 
 void BoxDemo::render()
@@ -294,7 +322,8 @@ void BoxDemo::render()
         m_pCommandList->OMSetRenderTargets(1, &rtvHandle, true, &dsvHandle);
     }
 
-    m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_pMesh->m_indexCount), 1, 0, 0, 0);
+    m_pCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+    m_pCommandList->DrawIndexedInstanced(18, 1, 36, 8, 0);
 
     {
         D3D12_RESOURCE_BARRIER renderTargetToPresentTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),
@@ -337,8 +366,8 @@ void BoxDemo::onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons)
     int16_t dMouseY = m_curMouseY - m_lastMouseY;
     if (buttons & MouseButton::Left)
     {
-        m_camAnglePhi += 0.02f * dMouseX;
-        m_camAngleTheta += 0.02f * -dMouseY;
+        m_camAnglePhi += -0.02f * dMouseX;
+        m_camAngleTheta += 0.02f * dMouseY;
         m_camAngleTheta = std::fmax(m_camAngleTheta, -DirectX::XM_PIDIV2 + 0.001f);
         m_camAngleTheta = std::fmin(m_camAngleTheta, DirectX::XM_PIDIV2 - 0.001f);
     }

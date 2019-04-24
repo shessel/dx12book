@@ -36,6 +36,8 @@ protected:
         float time;
     };
 
+    PerObjectConstants m_perObjectConstants = {};
+
     std::unique_ptr<Mesh> m_pMesh;
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pCbvHeap;
