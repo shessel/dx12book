@@ -350,12 +350,14 @@ void BoxDemo::onMouseDown(int16_t xPos, int16_t yPos, uint8_t /*buttons*/)
 {
     m_curMouseX = m_lastMouseX = xPos;
     m_curMouseY = m_lastMouseY = yPos;
+    SetCapture(m_hWnd);
 }
 
 void BoxDemo::onMouseUp(int16_t xPos, int16_t yPos, uint8_t /*buttons*/)
 {
     m_curMouseX = m_lastMouseX = xPos;
     m_curMouseY = m_lastMouseY = yPos;
+    ReleaseCapture();
 }
 
 void BoxDemo::onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons)
