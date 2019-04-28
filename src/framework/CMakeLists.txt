@@ -7,6 +7,7 @@ target_sources(framework PRIVATE
     D3D12Util.cpp
     DebugUtil.cpp
     Mesh.cpp
+    Renderable.cpp
     Timer.cpp)
 target_compile_features(framework PUBLIC cxx_std_17)
 target_include_directories(framework INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

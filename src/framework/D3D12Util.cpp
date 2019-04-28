@@ -1,5 +1,7 @@
 #include "D3D12Util.h"
 
+#include <cinttypes>
+
 #include "DebugUtil.h"
 #include "d3dcompiler.h"
 
@@ -58,9 +60,10 @@ namespace D3D12Util
         }
     }
 
-    void ConstantBuffer::copyData(const void* const data, const size_t dataSize)
+    void ConstantBuffer::copyData(const void* const data, const size_t dataSize, const size_t byteOffset)
     {
-        memcpy(m_pMappedBuffer, data, dataSize);
+        std::uint8_t* pMappedBufferOffset = static_cast<std::uint8_t*>(m_pMappedBuffer) + byteOffset;
+        memcpy(pMappedBufferOffset, data, dataSize);
     }
 
     Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target)

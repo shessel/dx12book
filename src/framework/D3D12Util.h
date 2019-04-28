@@ -21,7 +21,7 @@ namespace D3D12Util
         ConstantBuffer& operator=(const ConstantBuffer& other) = delete;
 
         ID3D12Resource1* getResource() const { return m_pUploadBuffer.Get(); }
-        void copyData(const void* const data, const size_t dataSize);
+        void copyData(const void* const data, const size_t dataSize, const size_t byteOffset = 0);
         const UINT getSize() const { return m_sizeInBytes; }
     private:
         Microsoft::WRL::ComPtr<ID3D12Resource1> m_pUploadBuffer;
