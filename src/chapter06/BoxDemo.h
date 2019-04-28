@@ -1,13 +1,14 @@
 #pragma once
 
-#include "AppBase.h"
-#include "Mesh.h"
-
 #include <memory>
 #include <vector>
 
 #include "DirectXMath.h"
 #include "D3D12Util.h"
+
+#include "ArcBallCamera.h"
+#include "AppBase.h"
+#include "Mesh.h"
 
 class BoxDemo : public AppBase
 {
@@ -38,6 +39,8 @@ protected:
 
     PerObjectConstants m_perObjectConstants = {};
 
+    ArcBallCamera m_camera = ArcBallCamera(3.0f);
+
     std::unique_ptr<Mesh> m_pMesh;
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pCbvHeap;
@@ -53,7 +56,4 @@ protected:
     int16_t m_lastMouseY = 0;
     int16_t m_curMouseX = 0;
     int16_t m_curMouseY = 0;
-    float m_camAnglePhi = 0.0f;
-    float m_camAngleTheta = 0.0f;
-    float m_camDistance = 3.0f;
 };

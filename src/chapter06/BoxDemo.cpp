@@ -1,7 +1,5 @@
 #include "BoxDemo.h"
 
-#include <iterator>
-
 #include "d3d12.h"
 #include "dxgi.h"
 
@@ -246,20 +244,9 @@ void BoxDemo::initialize()
 
 void BoxDemo::update(float /*dt*/)
 {
-    float sinPhi, cosPhi, sinTheta, cosTheta;
-    DirectX::XMScalarSinCos(&sinPhi, &cosPhi, m_camAnglePhi);
-    DirectX::XMScalarSinCos(&sinTheta, &cosTheta, m_camAngleTheta);
-
-    float x = m_camDistance * sinPhi * cosTheta;
-    float y = m_camDistance * sinTheta;
-    float z = m_camDistance * cosPhi * cosTheta;;
-
-    DirectX::XMVECTOR camera = { x, y, z };
-    DirectX::XMVECTOR focus = { 0.0f, 0.0f, 0.0f };
-    DirectX::XMVECTOR up = { 0.0f, 1.0f, 0.0f };
-
     DirectX::XMStoreFloat4x4(&m_perObjectConstants.model, DirectX::XMMatrixIdentity());
-    DirectX::XMStoreFloat4x4(&m_perObjectConstants.view, DirectX::XMMatrixLookAtRH(camera, focus, up));
+    m_camera.update();
+    m_perObjectConstants.view = m_camera.m_matrix;
     DirectX::XMStoreFloat4x4(&m_perObjectConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 10.0f));
     m_perObjectConstants.time = m_timer.getElapsedTime();
     m_pConstantBuffer->copyData(static_cast<void*>(&m_perObjectConstants), sizeof(PerObjectConstants));
@@ -368,15 +355,12 @@ void BoxDemo::onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons)
     int16_t dMouseY = m_curMouseY - m_lastMouseY;
     if (buttons & MouseButton::Left)
     {
-        m_camAnglePhi += -0.02f * dMouseX;
-        m_camAngleTheta += 0.02f * dMouseY;
-        m_camAngleTheta = std::fmax(m_camAngleTheta, -DirectX::XM_PIDIV2 + 0.001f);
-        m_camAngleTheta = std::fmin(m_camAngleTheta, DirectX::XM_PIDIV2 - 0.001f);
+        m_camera.updatePhi(-0.02f * dMouseX);
+        m_camera.updateTheta(0.02f * dMouseY);
     }
     if (buttons & MouseButton::Right)
     {
-        m_camDistance += 0.02f * dMouseY;
-        m_camDistance = max(m_camDistance, 0.1f); 
+        m_camera.updateDistance(0.02f * dMouseY);
     }
     m_lastMouseX = m_curMouseX;
     m_lastMouseY = m_curMouseY;
