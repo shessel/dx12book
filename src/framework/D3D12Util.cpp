@@ -28,8 +28,8 @@ namespace D3D12Util
 
     ConstantBuffer::ConstantBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize)
     {
-        const size_t elementSizeMultipleOf256 = (elementSize + 0xffull) & (~0xffull);
-        m_sizeInBytes = static_cast<UINT>(elementCount * elementSizeMultipleOf256);
+        m_elementSizeInBytes = static_cast<UINT>((elementSize) + 0xffu) & (~0xffu);
+        m_sizeInBytes = static_cast<UINT>(elementCount) * m_elementSizeInBytes;
 
         D3D12_RESOURCE_DESC desc = {};
         desc.Alignment = 0;

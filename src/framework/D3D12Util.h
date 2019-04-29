@@ -23,9 +23,11 @@ namespace D3D12Util
         ID3D12Resource1* getResource() const { return m_pUploadBuffer.Get(); }
         void copyData(const void* const data, const size_t dataSize, const size_t byteOffset = 0);
         const UINT getSize() const { return m_sizeInBytes; }
+        const UINT getElementSize() const { return m_elementSizeInBytes; }
     private:
         Microsoft::WRL::ComPtr<ID3D12Resource1> m_pUploadBuffer;
         UINT m_sizeInBytes = 0;
+        UINT m_elementSizeInBytes = 0;
         void *m_pMappedBuffer = nullptr;
     };
 

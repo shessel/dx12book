@@ -73,6 +73,4 @@ private:
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineState;
 
     size_t m_cbvDescriptorsPerFrame;
-    UINT m_cbPassStride;
-    UINT m_cbObjectStride;
 };

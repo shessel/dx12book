@@ -28,21 +28,21 @@ void ShapesDemo::initialize()
             std::vector<DirectX::XMFLOAT3> vertices =
             {
                 // cube
-                DirectX::XMFLOAT3(-2.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(0.0f, -1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(-2.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(0.0f,  1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(-2.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
-                DirectX::XMFLOAT3(0.0f, -1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f),
-                DirectX::XMFLOAT3(-2.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f),
-                DirectX::XMFLOAT3(0.0f,  1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f),
+                DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+                DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
+                DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
+                DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
+                DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f),
+                DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f),
+                DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f),
 
                 // pyramid
-                DirectX::XMFLOAT3(0.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(2.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(0.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(2.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(1.0f,  1.0f,  0.0f), DirectX::XMFLOAT3(0.5f, 0.5f, 1.0f),
+                DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+                DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
+                DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
+                DirectX::XMFLOAT3(0.0f,  1.0f,  0.0f), DirectX::XMFLOAT3(0.5f, 0.5f, 1.0f),
             };
 
             m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), 2*sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
@@ -99,7 +99,7 @@ void ShapesDemo::initialize()
             renderable.m_startIndex = 0u;
             renderable.m_baseVertex = 0u;
             renderable.m_indexCount = 36u;
-            renderable.m_model._11 = 0.5f;
+            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(-1.25f, 0.0f, 0.0f));
             m_renderables.emplace_back(renderable);
         }
 
@@ -110,6 +110,7 @@ void ShapesDemo::initialize()
             renderable.m_startIndex = 36u;
             renderable.m_baseVertex = 8u;
             renderable.m_indexCount = 18u;
+            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(1.25f, 0.0f, 0.0f));
             m_renderables.emplace_back(renderable);
         }
     }
@@ -125,35 +126,50 @@ void ShapesDemo::initialize()
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    m_cbObjectStride = (static_cast<UINT>(sizeof(ObjectConstants)) + 0xffu) & (~0xffu);
     for (size_t i = 0; i < m_frameResourcesCount; ++i)
     {
-        FrameResources& frameResources = m_frameResources.emplace_back(m_pDevice.Get(), 1, m_renderables.size());
+        m_frameResources.emplace_back(m_pDevice.Get(), 1, m_renderables.size());
+    }
 
+    for (const FrameResources& frameResources : m_frameResources)
+    {
         D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-        desc.BufferLocation = frameResources.m_pCbPass->getResource()->GetGPUVirtualAddress();
-        desc.SizeInBytes = frameResources.m_pCbPass->getSize();
-        m_cbPassStride = desc.SizeInBytes;
-        m_pDevice->CreateConstantBufferView(&desc, handle);
-        handle.ptr += m_cbvSrvUavDescriptorSize;
+        desc.SizeInBytes = frameResources.m_pCbObjects->getElementSize();
+        desc.BufferLocation = frameResources.m_pCbObjects->getResource()->GetGPUVirtualAddress();
 
-        D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = frameResources.m_pCbObjects->getResource()->GetGPUVirtualAddress();
         for (size_t j = 0; j < m_renderables.size(); ++j)
         {
-            desc = {};
-            desc.BufferLocation = gpuAddress;
-            // needs to be multiple of 256
-            desc.SizeInBytes = m_cbObjectStride;
             m_pDevice->CreateConstantBufferView(&desc, handle);
-
-            gpuAddress += desc.SizeInBytes;
+            desc.BufferLocation += desc.SizeInBytes;
             handle.ptr += m_cbvSrvUavDescriptorSize;
         }
     }
 
+    for (const FrameResources& frameResources : m_frameResources)
     {
+        D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
+        desc.BufferLocation = frameResources.m_pCbPass->getResource()->GetGPUVirtualAddress();
+        desc.SizeInBytes = frameResources.m_pCbPass->getSize();
+        m_pDevice->CreateConstantBufferView(&desc, handle);
+        handle.ptr += m_cbvSrvUavDescriptorSize;
+    }
+
+    {
+        D3D12_DESCRIPTOR_RANGE1 objectsDescriptorRange = {};
+        objectsDescriptorRange.BaseShaderRegister = 0;
+        objectsDescriptorRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+        objectsDescriptorRange.NumDescriptors = 1;
+        objectsDescriptorRange.OffsetInDescriptorsFromTableStart = 0;
+        objectsDescriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+        objectsDescriptorRange.RegisterSpace = 0;
+
+        D3D12_ROOT_PARAMETER1 rpObjects = {};
+        rpObjects.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+        rpObjects.DescriptorTable.NumDescriptorRanges = 1;
+        rpObjects.DescriptorTable.pDescriptorRanges = &objectsDescriptorRange;
+
         D3D12_DESCRIPTOR_RANGE1 passDescriptorRange = {};
-        passDescriptorRange.BaseShaderRegister = 0;
+        passDescriptorRange.BaseShaderRegister = 1;
         passDescriptorRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
         passDescriptorRange.NumDescriptors = 1;
         passDescriptorRange.OffsetInDescriptorsFromTableStart = 0;
@@ -164,19 +180,6 @@ void ShapesDemo::initialize()
         rpPass.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
         rpPass.DescriptorTable.NumDescriptorRanges = 1;
         rpPass.DescriptorTable.pDescriptorRanges = &passDescriptorRange;
-
-        D3D12_DESCRIPTOR_RANGE1 objectsDescriptorRange = {};
-        objectsDescriptorRange.BaseShaderRegister = 1;
-        objectsDescriptorRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
-        objectsDescriptorRange.NumDescriptors = 1;
-        objectsDescriptorRange.OffsetInDescriptorsFromTableStart = 1;
-        objectsDescriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-        objectsDescriptorRange.RegisterSpace = 0;
-
-        D3D12_ROOT_PARAMETER1 rpObjects = {};
-        rpObjects.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-        rpObjects.DescriptorTable.NumDescriptorRanges = 1;
-        rpObjects.DescriptorTable.pDescriptorRanges = &objectsDescriptorRange;
 
         D3D12_ROOT_PARAMETER1 parameters[] = { rpObjects, rpPass,  };
 
@@ -312,11 +315,11 @@ void ShapesDemo::update(float dt)
         curFrameResources.m_pCbPass->copyData(static_cast<void*>(&passConstants), sizeof(PassConstants));
     }
 
+    size_t elementSize = curFrameResources.m_pCbObjects->getElementSize();
     for (const Renderable& renderable : m_renderables)
     {
         ObjectConstants objectConstants;
         objectConstants.model = renderable.m_model;
-        size_t elementSize = sizeof(ObjectConstants);
         curFrameResources.m_pCbObjects->copyData(static_cast<void*>(&objectConstants), elementSize, renderable.m_cbIndex * elementSize);
     }
 }
@@ -349,9 +352,11 @@ void ShapesDemo::render()
     const D3D12_VERTEX_BUFFER_VIEW vertexBufferView = m_pMesh->getVertexBufferView();
     m_pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuBaseHandle = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-    gpuBaseHandle.ptr += m_cbPassStride + m_cbObjectStride * m_renderables.size();
-    m_pCommandList->SetGraphicsRootDescriptorTable(0, gpuBaseHandle);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandlePassCb = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    gpuHandlePassCb.ptr += m_frameResourcesCount * m_renderables.size() * m_cbvSrvUavDescriptorSize;
+    gpuHandlePassCb.ptr += m_curFrameResourcesIndex * m_cbvSrvUavDescriptorSize;;
+
+    m_pCommandList->SetGraphicsRootDescriptorTable(1, gpuHandlePassCb);
 
     {
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = getCurrentBackBufferView();
@@ -375,11 +380,13 @@ void ShapesDemo::render()
         m_pCommandList->RSSetScissorRects(1, &rect);
     }
 
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandleObjectsCb = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    gpuHandleObjectsCb.ptr += m_curFrameResourcesIndex * m_renderables.size() * m_cbvSrvUavDescriptorSize;
     for (const Renderable& renderable : m_renderables)
     {
-        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = gpuBaseHandle;
-        gpuHandle.ptr += (renderable.m_cbIndex + 1u) * m_cbObjectStride;
-        m_pCommandList->SetGraphicsRootDescriptorTable(1, gpuHandle);
+        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = gpuHandleObjectsCb;
+        gpuHandle.ptr += renderable.m_cbIndex * m_cbvSrvUavDescriptorSize;
+        m_pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 
         m_pCommandList->IASetPrimitiveTopology(renderable.m_topology);
 

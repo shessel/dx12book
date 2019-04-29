@@ -11,8 +11,8 @@ struct ObjectData
 	float4x4 model;
 };
 
-ConstantBuffer<PassData> g_cbPass : register(b0);
-ConstantBuffer<ObjectData> g_cbObject : register(b1);
+ConstantBuffer<ObjectData> g_cbObject : register(b0);
+ConstantBuffer<PassData> g_cbPass : register(b1);
 
 struct VertexInput
 {
