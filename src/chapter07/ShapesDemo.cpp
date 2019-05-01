@@ -1,6 +1,7 @@
 #include "ShapesDemo.h"
 
 #include "DebugUtil.h"
+#include "GeometryUtil.h"
 #include "Renderable.h"
 
 ShapesDemo::~ShapesDemo()
@@ -44,11 +45,7 @@ void ShapesDemo::initialize()
                 DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
                 DirectX::XMFLOAT3(0.0f,  1.0f,  0.0f), DirectX::XMFLOAT3(0.5f, 0.5f, 1.0f),
             };
-
-            m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), 2*sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
-        }
-
-        {
+            
             std::vector<std::uint16_t> indices =
             {
                 // cube front
@@ -89,6 +86,31 @@ void ShapesDemo::initialize()
                 4, 2, 0,
             };
 
+            for (uint8_t i = 0; i < 4u; ++i)
+            {
+                size_t vertexCountGeoSphere;
+                size_t indexCountGeoSphere;
+                GeometryUtil::calculateVertexIndexCountsGeoSphere(i, vertexCountGeoSphere, indexCountGeoSphere);
+
+                size_t startVertex = vertices.size();
+                size_t startIndex = indices.size();
+                vertices.resize(vertices.size() + vertexCountGeoSphere * 2);
+                indices.resize(indices.size() + indexCountGeoSphere);
+                GeometryUtil::createGeoSphere(1.0f, i, vertices.data() + startVertex, indices.data() + startIndex);
+
+                {
+                    // pyramid
+                    Renderable renderable;
+                    renderable.m_cbIndex = 2u + i;
+                    renderable.m_startIndex = static_cast<UINT>(startIndex);
+                    renderable.m_baseVertex = static_cast<UINT>(startVertex / 2);
+                    renderable.m_indexCount = static_cast<UINT>(indexCountGeoSphere);
+                    DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(-2.0f+i*2.0f, 1.0f, 0.0f));
+                    m_renderables.emplace_back(renderable);
+                }
+            }
+
+            m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), 2 * sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
             m_pMesh->createIndexBuffer(indices.data(), indices.size(), sizeof(std::uint16_t), m_pCommandList.Get());
         }
 
@@ -99,7 +121,7 @@ void ShapesDemo::initialize()
             renderable.m_startIndex = 0u;
             renderable.m_baseVertex = 0u;
             renderable.m_indexCount = 36u;
-            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(-1.25f, 0.0f, 0.0f));
+            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(-1.25f, 0.0f, -1.0f));
             m_renderables.emplace_back(renderable);
         }
 
@@ -110,7 +132,7 @@ void ShapesDemo::initialize()
             renderable.m_startIndex = 36u;
             renderable.m_baseVertex = 8u;
             renderable.m_indexCount = 18u;
-            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(1.25f, 0.0f, 0.0f));
+            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(1.25f, 0.0f, -2.0f));
             m_renderables.emplace_back(renderable);
         }
     }

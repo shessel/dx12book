@@ -6,6 +6,7 @@ target_sources(framework PRIVATE
     AppBase.cpp
     D3D12Util.cpp
     DebugUtil.cpp
+    GeometryUtil.cpp
     Mesh.cpp
     Renderable.cpp
     Timer.cpp)
