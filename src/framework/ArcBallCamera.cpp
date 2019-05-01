@@ -18,7 +18,8 @@ void ArcBallCamera::update()
     float z = m_distance * cosPhi * cosTheta;;
 
     DirectX::XMVECTOR position = { x, y, z };
-    DirectX::XMVECTOR focus = { 0.0f, 0.0f, 0.0f };
+    DirectX::XMVECTOR focus = DirectX::XMLoadFloat3(&m_center);
+    position = DirectX::XMVectorAdd(focus, position);
     DirectX::XMVECTOR up = { 0.0f, 1.0f, 0.0f };
 
     DirectX::XMStoreFloat4x4(&m_matrix, DirectX::XMMatrixLookAtRH(position, focus, up));
@@ -40,4 +41,15 @@ void ArcBallCamera::updateDistance(const float dDistance)
 {
     m_distance += dDistance;
     m_distance = std::fmaxf(m_distance, 0.1f);
+}
+
+void ArcBallCamera::move(const DirectX::XMFLOAT3& offset)
+{
+    DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&offset);
+    DirectX::XMMATRIX m = DirectX::XMLoadFloat4x4(&m_matrix);
+    m = DirectX::XMMatrixTranspose(m);
+    v = DirectX::XMVector3Transform(v, m);
+    DirectX::XMVECTOR c = DirectX::XMLoadFloat3(&m_center);
+    v = DirectX::XMVectorAdd(v, c);
+    DirectX::XMStoreFloat3(&m_center, v);
 }

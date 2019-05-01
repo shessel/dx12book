@@ -460,6 +460,10 @@ void ShapesDemo::onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons)
         m_camera.updatePhi(-0.02f * dMouseX);
         m_camera.updateTheta(0.02f * dMouseY);
     }
+    if (buttons & MouseButton::Middle)
+    {
+        m_camera.move({ -0.02f * dMouseX, 0.02f * dMouseY, 0.0f });
+    }
     if (buttons & MouseButton::Right)
     {
         m_camera.updateDistance(0.02f * dMouseY);

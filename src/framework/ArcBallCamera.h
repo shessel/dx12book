@@ -9,10 +9,12 @@ struct ArcBallCamera
     void updatePhi(const float dPhi);
     void updateTheta(const float dTheta);
     void updateDistance(const float dDistance);
+    void move(const DirectX::XMFLOAT3& offset);
 
     float m_phi = 0.0f;
     float m_theta = 0.0f;
     float m_distance = 1.0f;
+    DirectX::XMFLOAT3 m_center = { 0.0f, 0.0f, 0.0f };
 
     DirectX::XMFLOAT4X4 m_matrix;
 };
