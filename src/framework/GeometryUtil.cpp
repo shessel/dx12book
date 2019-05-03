@@ -11,6 +11,11 @@
 
 namespace GeometryUtil
 {
+    struct Vertex {
+        DirectX::XMFLOAT3 pos;
+        DirectX::XMFLOAT3 col;
+    };
+
     void calculateVertexIndexCountsGeoSphere(uint8_t subdivisions, size_t& vertexCount, size_t& indexCount)
     {
         /*
@@ -37,11 +42,6 @@ namespace GeometryUtil
 
     void createGeoSphere(const float radius, const uint8_t subdivisions, void* const vertices, void* const indices)
     {
-        struct Vertex {
-            DirectX::XMFLOAT3 pos;
-            DirectX::XMFLOAT3 col;
-        };
-
         const float phi = 1.6180339887f;
         const float distFromCenter = std::sqrtf(phi * phi + 1.0f);
         const float normalizationFactor = radius / distFromCenter;
@@ -197,6 +197,55 @@ namespace GeometryUtil
 
                 std::swap(dstVertices, srcVertices);
                 std::swap(dstIndices, srcIndices);
+            }
+        }
+    }
+
+    void calculateVertexIndexCountsSquare(uint16_t vertexCountPerSide, size_t& vertexCount, size_t& indexCount)
+    {
+        vertexCount = vertexCountPerSide * vertexCountPerSide;
+        // square count is (vertexCountPerSide-1)^2 which becomes vertexCount^2 - 2*vertexCountPerSide + 1^2.
+        // triangle count is twice the square count, and index count is three times triangle count
+        indexCount = 6 * (vertexCount - 2 * vertexCountPerSide + 1);
+    }
+
+    void createSquare(const float width, const uint16_t vertexCountPerSide, void* const vertices, void* const indices)
+    {
+        size_t vertexCount;
+        size_t indexCount;
+        calculateVertexIndexCountsSquare(vertexCountPerSide, vertexCount, indexCount);
+
+        const float stepSize = width / (vertexCountPerSide - 1);
+        const float start = -width / 2;
+        float x = start;
+        float y = x;
+
+        Vertex* curVertex = reinterpret_cast<Vertex*>(vertices);
+        for (size_t xOffset = 0; xOffset < vertexCountPerSide; ++xOffset)
+        {
+            x = start;
+            for (size_t yOffset = 0; yOffset < vertexCountPerSide; ++yOffset)
+            {
+                *(curVertex++) = Vertex{
+                    {x, 0.0f, y}, {0.0f, 0.0f, 0.0f}
+                };
+                x += stepSize;
+            }
+            y += stepSize;
+        }
+
+        uint16_t *curIndex = reinterpret_cast<uint16_t*>(indices);
+        for (uint16_t xOffset = 0; xOffset < vertexCountPerSide - 1; ++xOffset)
+        {
+            for (uint16_t yOffset = 0; yOffset < vertexCountPerSide - 1; ++yOffset)
+            {
+                *(curIndex++) = yOffset * vertexCountPerSide + xOffset;
+                *(curIndex++) = yOffset * vertexCountPerSide + xOffset + 1;
+                *(curIndex++) = (yOffset + 1) * vertexCountPerSide + xOffset;
+
+                *(curIndex++) = (yOffset + 1) * vertexCountPerSide + xOffset;
+                *(curIndex++) = yOffset * vertexCountPerSide + xOffset + 1;
+                *(curIndex++) = (yOffset + 1) * vertexCountPerSide + xOffset + 1;
             }
         }
     }

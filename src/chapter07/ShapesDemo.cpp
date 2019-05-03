@@ -86,6 +86,58 @@ void ShapesDemo::initialize()
                 4, 2, 0,
             };
 
+            {
+                // square
+                size_t vertexCountSquare;
+                size_t indexCountSquare;
+                GeometryUtil::calculateVertexIndexCountsSquare(15, vertexCountSquare, indexCountSquare);
+
+                size_t startVertex = vertices.size();
+                size_t startIndex = indices.size();
+                vertices.resize(vertices.size() + vertexCountSquare * 2);
+                indices.resize(indices.size() + indexCountSquare);
+                GeometryUtil::createSquare(10.0f, 15, vertices.data() + startVertex, indices.data() + startIndex);
+
+                {
+                    Renderable renderable;
+                    renderable.m_cbIndex = 0u;
+                    renderable.m_startIndex = static_cast<UINT>(startIndex);
+                    renderable.m_baseVertex = static_cast<UINT>(startVertex / 2);
+                    renderable.m_indexCount = static_cast<UINT>(indexCountSquare);
+                    DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f));
+                    m_renderables.emplace_back(renderable);
+                }
+            }
+
+            constexpr uint8_t objectCount = 6u;
+            constexpr float distanceFromCenter = 3.5f;
+
+            {
+                // cube
+                Renderable renderable;
+                renderable.m_cbIndex = 1u;
+                renderable.m_startIndex = 0u;
+                renderable.m_baseVertex = 0u;
+                renderable.m_indexCount = 36u;
+                DirectX::XMMATRIX model = DirectX::XMMatrixRotationY(renderable.m_cbIndex * DirectX::g_XMTwoPi[0]/objectCount);
+                model = DirectX::XMMatrixMultiply(DirectX::XMMatrixTranslation(0.0f, 1.0f, distanceFromCenter), model);
+                DirectX::XMStoreFloat4x4(&renderable.m_model, model);
+                m_renderables.emplace_back(renderable);
+            }
+
+            {
+                // pyramid
+                Renderable renderable;
+                renderable.m_cbIndex = 2u;
+                renderable.m_startIndex = 36u;
+                renderable.m_baseVertex = 8u;
+                renderable.m_indexCount = 18u;
+                DirectX::XMMATRIX model = DirectX::XMMatrixRotationY(renderable.m_cbIndex * DirectX::g_XMTwoPi[0] / objectCount);
+                model = DirectX::XMMatrixMultiply(DirectX::XMMatrixTranslation(0.0f, 1.0f, distanceFromCenter), model);
+                DirectX::XMStoreFloat4x4(&renderable.m_model, model);
+                m_renderables.emplace_back(renderable);
+            }
+
             for (uint8_t i = 0; i < 4u; ++i)
             {
                 size_t vertexCountGeoSphere;
@@ -99,41 +151,20 @@ void ShapesDemo::initialize()
                 GeometryUtil::createGeoSphere(1.0f, i, vertices.data() + startVertex, indices.data() + startIndex);
 
                 {
-                    // pyramid
                     Renderable renderable;
-                    renderable.m_cbIndex = 2u + i;
+                    renderable.m_cbIndex = 3u + i;
                     renderable.m_startIndex = static_cast<UINT>(startIndex);
                     renderable.m_baseVertex = static_cast<UINT>(startVertex / 2);
                     renderable.m_indexCount = static_cast<UINT>(indexCountGeoSphere);
-                    DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(-2.0f+i*2.0f, 1.0f, 0.0f));
+                    DirectX::XMMATRIX model = DirectX::XMMatrixRotationY(renderable.m_cbIndex * DirectX::g_XMTwoPi[0] / objectCount);
+                    model = DirectX::XMMatrixMultiply(DirectX::XMMatrixTranslation(0.0f, 1.0f, distanceFromCenter), model);
+                    DirectX::XMStoreFloat4x4(&renderable.m_model, model);
                     m_renderables.emplace_back(renderable);
                 }
             }
 
             m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), 2 * sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
             m_pMesh->createIndexBuffer(indices.data(), indices.size(), sizeof(std::uint16_t), m_pCommandList.Get());
-        }
-
-        {
-            // cube
-            Renderable renderable;
-            renderable.m_cbIndex = 0u;
-            renderable.m_startIndex = 0u;
-            renderable.m_baseVertex = 0u;
-            renderable.m_indexCount = 36u;
-            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(-1.25f, 0.0f, -1.0f));
-            m_renderables.emplace_back(renderable);
-        }
-
-        {
-            // pyramid
-            Renderable renderable;
-            renderable.m_cbIndex = 1u;
-            renderable.m_startIndex = 36u;
-            renderable.m_baseVertex = 8u;
-            renderable.m_indexCount = 18u;
-            DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(1.25f, 0.0f, -2.0f));
-            m_renderables.emplace_back(renderable);
         }
     }
     
@@ -331,7 +362,7 @@ void ShapesDemo::update(float dt)
         PassConstants passConstants;
         m_camera.update();
         passConstants.view = m_camera.m_matrix;
-        DirectX::XMStoreFloat4x4(&passConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 10.0f));
+        DirectX::XMStoreFloat4x4(&passConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 100.0f));
         passConstants.time = m_timer.getElapsedTime();
         passConstants.deltaTime = dt;
         curFrameResources.m_pCbPass->copyData(static_cast<void*>(&passConstants), sizeof(PassConstants));
