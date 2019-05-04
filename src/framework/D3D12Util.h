@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cinttypes>
+
 #include "d3d12.h"
 #include "wrl.h"
 
@@ -11,14 +13,23 @@ namespace D3D12Util
     const D3D12_RESOURCE_BARRIER TransitionBarrier(ID3D12Resource* resource,
         D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
-    class ConstantBuffer
+    class MappedGPUBuffer
     {
     public:
-        ConstantBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize);
-        ~ConstantBuffer();
 
-        ConstantBuffer(const ConstantBuffer& other) = delete;
-        ConstantBuffer& operator=(const ConstantBuffer& other) = delete;
+        struct Flags
+        {
+            enum Enum : uint8_t {
+                None = 0u,
+                ConstantBuffer = 1u,
+            };
+        };
+
+        MappedGPUBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize, const uint8_t flags = Flags::None);
+        ~MappedGPUBuffer();
+
+        MappedGPUBuffer(const MappedGPUBuffer& other) = delete;
+        MappedGPUBuffer& operator=(const MappedGPUBuffer& other) = delete;
 
         ID3D12Resource1* getResource() const { return m_pUploadBuffer.Get(); }
         void copyData(const void* const data, const size_t dataSize, const size_t byteOffset = 0);

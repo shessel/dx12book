@@ -26,9 +26,11 @@ namespace D3D12Util
         return TransitionBarrier(resource, 0, stateBefore, stateAfter);
     }
 
-    ConstantBuffer::ConstantBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize)
+    MappedGPUBuffer::MappedGPUBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize, const uint8_t flags)
     {
-        m_elementSizeInBytes = static_cast<UINT>((elementSize) + 0xffu) & (~0xffu);
+        // constant buffer size needs to be multiple of 256. CBVs also need to point to 256 byte aligned adresses,
+        // so if we want multiple CBVs into one buffer each element needs to be aligned to 256 bytes as well.
+        m_elementSizeInBytes = (flags & Flags::ConstantBuffer) ? static_cast<UINT>((elementSize) + 0xffu) & (~0xffu) : static_cast<UINT>(elementSize);
         m_sizeInBytes = static_cast<UINT>(elementCount) * m_elementSizeInBytes;
 
         D3D12_RESOURCE_DESC desc = {};
@@ -52,7 +54,7 @@ namespace D3D12Util
         ThrowIfFailed(m_pUploadBuffer->Map(0, nullptr, &m_pMappedBuffer));
     }
 
-    ConstantBuffer::~ConstantBuffer()
+    MappedGPUBuffer::~MappedGPUBuffer()
     {
         if (m_pUploadBuffer)
         {
@@ -60,7 +62,7 @@ namespace D3D12Util
         }
     }
 
-    void ConstantBuffer::copyData(const void* const data, const size_t dataSize, const size_t byteOffset)
+    void MappedGPUBuffer::copyData(const void* const data, const size_t dataSize, const size_t byteOffset)
     {
         std::uint8_t* pMappedBufferOffset = static_cast<std::uint8_t*>(m_pMappedBuffer) + byteOffset;
         memcpy(pMappedBufferOffset, data, dataSize);

@@ -44,7 +44,7 @@ protected:
     std::unique_ptr<Mesh> m_pMesh;
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pCbvHeap;
-    std::unique_ptr<D3D12Util::ConstantBuffer> m_pConstantBuffer;
+    std::unique_ptr<D3D12Util::MappedGPUBuffer> m_pConstantBuffer;
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 
     Microsoft::WRL::ComPtr<ID3DBlob> m_pVertexShader;

@@ -18,7 +18,7 @@ void BoxDemo::initialize()
     }
 
     {
-        m_pConstantBuffer = std::make_unique<D3D12Util::ConstantBuffer>(m_pDevice.Get(), 1, sizeof(PerObjectConstants));
+        m_pConstantBuffer = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), 1, sizeof(PerObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
 
         D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
         desc.BufferLocation = m_pConstantBuffer->getResource()->GetGPUVirtualAddress();

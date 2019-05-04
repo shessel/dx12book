@@ -38,8 +38,8 @@ private:
     {
         FrameResources(ID3D12Device* const pDevice, size_t passCount, size_t objectCount)
         {
-            m_pCbPass = std::make_unique<D3D12Util::ConstantBuffer>(pDevice, passCount, sizeof(PassConstants));
-            m_pCbObjects = std::make_unique<D3D12Util::ConstantBuffer>(pDevice, objectCount, sizeof(ObjectConstants));
+            m_pCbPass = std::make_unique<D3D12Util::MappedGPUBuffer>(pDevice, passCount, sizeof(PassConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
+            m_pCbObjects = std::make_unique<D3D12Util::MappedGPUBuffer>(pDevice, objectCount, sizeof(ObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
             pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_pCommandAllocator));
         }
         FrameResources(const FrameResources&) = delete;
@@ -49,8 +49,8 @@ private:
         ~FrameResources() = default;
 
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_pCommandAllocator;
-        std::unique_ptr<D3D12Util::ConstantBuffer> m_pCbPass;
-        std::unique_ptr<D3D12Util::ConstantBuffer> m_pCbObjects;
+        std::unique_ptr<D3D12Util::MappedGPUBuffer> m_pCbPass;
+        std::unique_ptr<D3D12Util::MappedGPUBuffer> m_pCbObjects;
         UINT64 m_fenceValue = 0u;
     };
 
