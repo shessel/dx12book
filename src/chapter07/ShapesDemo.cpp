@@ -26,24 +26,28 @@ void ShapesDemo::initialize()
     {
         m_pMesh = std::make_unique<Mesh>();
         {
-            std::vector<DirectX::XMFLOAT3> vertices =
+            struct Vertex {
+                DirectX::XMFLOAT3 pos;
+                DirectX::XMFLOAT3 col;
+            };
+            std::vector<Vertex> vertices =
             {
                 // cube
-                DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
-                DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f),
-                DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f),
-                DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f),
-
-                // pyramid
-                DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
-                DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
-                DirectX::XMFLOAT3(0.0f,  1.0f,  0.0f), DirectX::XMFLOAT3(0.5f, 0.5f, 1.0f),
+                {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)},
+                {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f)},
+                {DirectX::XMFLOAT3(-1.0f,  1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)},
+                {DirectX::XMFLOAT3(1.0f,  1.0f, -1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f)},
+                {DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f)},
+                {DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f)},
+                {DirectX::XMFLOAT3(-1.0f,  1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f)},
+                {DirectX::XMFLOAT3(1.0f,  1.0f,  1.0f),  DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)},
+                                                                                            
+                // pyramid                                                                  
+                {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)},
+                {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f)},
+                {DirectX::XMFLOAT3(-1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)},
+                {DirectX::XMFLOAT3(1.0f, -1.0f,  1.0f), DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f)},
+                {DirectX::XMFLOAT3(0.0f,  1.0f,  0.0f), DirectX::XMFLOAT3(0.5f, 0.5f, 1.0f)},
             };
             
             std::vector<std::uint16_t> indices =
@@ -94,7 +98,7 @@ void ShapesDemo::initialize()
 
                 size_t startVertex = vertices.size();
                 size_t startIndex = indices.size();
-                vertices.resize(vertices.size() + vertexCountSquare * 2);
+                vertices.resize(vertices.size() + vertexCountSquare);
                 indices.resize(indices.size() + indexCountSquare);
                 GeometryUtil::createSquare(10.0f, 15, vertices.data() + startVertex, indices.data() + startIndex);
 
@@ -102,14 +106,14 @@ void ShapesDemo::initialize()
                     Renderable renderable;
                     renderable.m_cbIndex = 0u;
                     renderable.m_startIndex = static_cast<UINT>(startIndex);
-                    renderable.m_baseVertex = static_cast<UINT>(startVertex / 2);
+                    renderable.m_baseVertex = static_cast<UINT>(startVertex);
                     renderable.m_indexCount = static_cast<UINT>(indexCountSquare);
                     DirectX::XMStoreFloat4x4(&renderable.m_model, DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f));
                     m_renderables.emplace_back(renderable);
                 }
             }
 
-            constexpr uint8_t objectCount = 6u;
+            constexpr uint8_t objectCount = 7u;
             constexpr float distanceFromCenter = 3.5f;
 
             {
@@ -138,7 +142,7 @@ void ShapesDemo::initialize()
                 m_renderables.emplace_back(renderable);
             }
 
-            for (uint8_t i = 0; i < 4u; ++i)
+            for (uint8_t i = 0; i < objectCount - 2u; ++i)
             {
                 size_t vertexCountGeoSphere;
                 size_t indexCountGeoSphere;
@@ -146,7 +150,7 @@ void ShapesDemo::initialize()
 
                 size_t startVertex = vertices.size();
                 size_t startIndex = indices.size();
-                vertices.resize(vertices.size() + vertexCountGeoSphere * 2);
+                vertices.resize(vertices.size() + vertexCountGeoSphere);
                 indices.resize(indices.size() + indexCountGeoSphere);
                 GeometryUtil::createGeoSphere(1.0f, i, vertices.data() + startVertex, indices.data() + startIndex);
 
@@ -154,7 +158,7 @@ void ShapesDemo::initialize()
                     Renderable renderable;
                     renderable.m_cbIndex = 3u + i;
                     renderable.m_startIndex = static_cast<UINT>(startIndex);
-                    renderable.m_baseVertex = static_cast<UINT>(startVertex / 2);
+                    renderable.m_baseVertex = static_cast<UINT>(startVertex);
                     renderable.m_indexCount = static_cast<UINT>(indexCountGeoSphere);
                     DirectX::XMMATRIX model = DirectX::XMMatrixRotationY(renderable.m_cbIndex * DirectX::g_XMTwoPi[0] / objectCount);
                     model = DirectX::XMMatrixMultiply(DirectX::XMMatrixTranslation(0.0f, 1.0f, distanceFromCenter), model);
@@ -163,7 +167,7 @@ void ShapesDemo::initialize()
                 }
             }
 
-            m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), 2 * sizeof(DirectX::XMFLOAT3), m_pCommandList.Get(), 0);
+            m_pMesh->createVertexBuffer(vertices.data(), vertices.size(), sizeof(Vertex), m_pCommandList.Get(), 0);
             m_pMesh->createIndexBuffer(indices.data(), indices.size(), sizeof(std::uint16_t), m_pCommandList.Get());
         }
     }
