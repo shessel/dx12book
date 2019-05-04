@@ -6,7 +6,9 @@ class InitializeDemo : public AppBase
 {
 public:
     using AppBase::AppBase;
-
+    virtual void onMouseDown(int16_t /*xPos*/, int16_t /*yPos*/, uint8_t /*buttons*/) {};
+    virtual void onMouseUp(int16_t /*xPos*/, int16_t /*yPos*/, uint8_t /*buttons*/) {};
+    virtual void onMouseMove(int16_t /*xPos*/, int16_t /*yPos*/, uint8_t /*buttons*/) {};
     virtual void initialize() {};
     virtual void update(float /*dt*/) {};
     virtual void render()
