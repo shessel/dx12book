@@ -80,7 +80,17 @@ namespace D3D12Util
 
         if (FAILED(hr))
         {
-            OutputDebugStringA(reinterpret_cast<char*>(pError->GetBufferPointer()));
+            OutputDebugStringW(L"Error in D3D12Util::compileShader:\n");
+            if (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND))
+            {
+                OutputDebugStringW(L"Could not open file \"");
+                OutputDebugStringW(fileName);
+                OutputDebugStringW(L"\"\n");
+            }
+            else
+            {
+                OutputDebugStringA(reinterpret_cast<char*>(pError->GetBufferPointer()));
+            }
             ThrowIfFailed(hr);
         }
 
