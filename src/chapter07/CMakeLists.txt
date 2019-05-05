@@ -6,11 +6,19 @@ target_compile_features(ch07-shapes-demo PRIVATE cxx_std_17)
 target_link_libraries(ch07-shapes-demo PRIVATE framework DirectXMath)
 add_custom_command(TARGET ch07-shapes-demo POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../../data ${CMAKE_CURRENT_BINARY_DIR}/data)
 
+add_executable(ch07-land-and-waves-demo WIN32)
+target_sources(ch07-land-and-waves-demo PRIVATE ch07-land-and-waves-demo.cpp LandAndWavesDemo.cpp)
+target_link_libraries(ch07-land-and-waves-demo PRIVATE DirectXMath framework)
+target_compile_features(ch07-land-and-waves-demo PRIVATE cxx_std_17)
+add_custom_command(TARGET ch07-land-and-waves-demo POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../../data ${CMAKE_CURRENT_BINARY_DIR}/data)
+
 # adapted from https://arne-mertz.de/2018/07/cmake-properties-options/
 if (MSVC)
     # warning level 4 and all warnings as errors
     target_compile_options(ch07-shapes-demo PRIVATE /W4 /WX /permissive-)
+    target_compile_options(ch07-land-and-waves-demo PRIVATE /W4 /WX /permissive-)
 else()
     # lots of warnings and all warnings as errors
     target_compile_options(ch07-shapes-demo PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(ch07-land-and-waves-demo PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
