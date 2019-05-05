@@ -226,8 +226,9 @@ namespace GeometryUtil
             x = start;
             for (size_t yOffset = 0; yOffset < vertexCountPerSide; ++yOffset)
             {
+                float grayScale = static_cast<float>(xOffset + yOffset * vertexCountPerSide) / (vertexCount - 1);
                 *(curVertex++) = Vertex{
-                    {x, 0.0f, y}, {0.0f, 0.0f, 0.0f}
+                    {x, 0.0f, y}, {grayScale, grayScale, grayScale}
                 };
                 x += stepSize;
             }
