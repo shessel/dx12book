@@ -44,7 +44,8 @@ private:
     struct Vertex
     {
         DirectX::XMFLOAT3 pos;
-        DirectX::XMFLOAT3 col;
+        DirectX::XMFLOAT2 uv;
+        DirectX::XMFLOAT3 normal;
     };
 
     struct FrameResources

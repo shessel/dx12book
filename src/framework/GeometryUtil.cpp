@@ -216,20 +216,45 @@ namespace GeometryUtil
         calculateVertexIndexCountsSquare(vertexCountPerSide, vertexCount, indexCount);
 
         const float stepSize = width / (vertexCountPerSide - 1);
-        const float start = -width / 2;
+        const float start = -width / 2.0f;
         float x = start;
         float y = x;
 
-        Vertex* curVertex = reinterpret_cast<Vertex*>(vertices);
+        uint8_t* curVertexByte = reinterpret_cast<uint8_t*>(vertices);
         for (size_t xOffset = 0; xOffset < vertexCountPerSide; ++xOffset)
         {
             x = start;
             for (size_t yOffset = 0; yOffset < vertexCountPerSide; ++yOffset)
             {
-                float grayScale = static_cast<float>(xOffset + yOffset * vertexCountPerSide) / (vertexCount - 1);
-                *(curVertex++) = Vertex{
-                    {x, 0.0f, y}, {grayScale, grayScale, grayScale}
-                };
+                for (size_t i = 0; i < defaultVertexDesc.attributeCount; ++i)
+                {
+                    const auto& desc = defaultVertexDesc.pAttributeDescs[i];
+                    switch (desc.attributeType)
+                    {
+                    case POSITION:
+                    {
+                        DirectX::XMFLOAT3* pos = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
+                        *pos = { x, 0.0f, y };
+                    }
+                    break;
+                    case UV:
+                    {
+                        DirectX::XMFLOAT2 *uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
+                        *uv = {
+                            static_cast<float>(xOffset) / (vertexCountPerSide - 1),
+                            static_cast<float>(yOffset) / (vertexCountPerSide - 1)
+                        };
+                    }
+                    break;
+                    case NORMAL:
+                    {
+                        DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
+                        *normal = { 0.0f, 1.0f, 0.0f };
+                    }
+                    break;
+                    }
+                }
+                curVertexByte += defaultVertexDesc.stride;
                 x += stepSize;
             }
             y += stepSize;

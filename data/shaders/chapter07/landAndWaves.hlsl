@@ -17,7 +17,8 @@ ConstantBuffer<PassData> g_cbPass : register(b1);
 struct VertexInput
 {
 	float4 position : POSITION;
-	float3 color : COLOR;
+    float2 uv : TEXCOORD;
+    float3 normal : NORMAL;
 };
 
 struct VertexOutput
@@ -34,7 +35,7 @@ VertexOutput vs(VertexInput vIn)
 	vOut.position = mul(g_cbObject.model, vIn.position);
 	vOut.position = mul(g_cbPass.view, vOut.position);
 	vOut.position = mul(g_cbPass.projection, vOut.position);
-	vOut.color = float4(vIn.color, 1.0f);
+	vOut.color = float4(vIn.uv, 0.0f, 1.0f);
 	return vOut;
 }
 
