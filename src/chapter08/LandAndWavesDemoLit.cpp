@@ -65,7 +65,6 @@ void LandAndWavesDemoLit::initialize()
 
     ThrowIfFailed(m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFrameFence)));
 
-    constexpr float width = 25.0f;
     size_t landVertexCount;
     {
         size_t landIndexCount;
@@ -73,36 +72,25 @@ void LandAndWavesDemoLit::initialize()
 
         std::unique_ptr<Vertex[]> p_landVertices = std::make_unique<Vertex[]>(landVertexCount);
         std::unique_ptr<uint16_t[]> p_landIndices = std::make_unique<uint16_t[]>(landIndexCount);
-        GeometryUtil::createSquare(width, VERTICES_PER_SIDE, p_landVertices.get(), p_landIndices.get());
+        GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, p_landVertices.get(), p_landIndices.get());
 
         for (uint16_t y = 0; y < VERTICES_PER_SIDE; ++y)
         {
             for (uint16_t x = 0; x < VERTICES_PER_SIDE; ++x)
             {
                 Vertex& vertex = p_landVertices[y * VERTICES_PER_SIDE + x];
-                float sinX = DirectX::XMScalarSinEst(vertex.pos.x * 16.0f / (width));
-                float cosZ = DirectX::XMScalarCosEst(vertex.pos.z * 16.0f / (width));
-                vertex.pos.y = (6.0f*(vertex.pos.z* sinX + vertex.pos.x*cosZ) + 0.5f) / width;
-                //if (vertex.pos.y < 0.5f)
-                //{
-                //    vertex.normal = { 1.0f, 0.96f, 0.62f };
-                //}
-                //else if (vertex.pos.y < 1.0f)
-                //{
-                //    vertex.normal = { 0.48f, 0.77f, 0.46f };
-                //}
-                //else if (vertex.pos.y < 2.0f)
-                //{
-                //    vertex.normal = { 0.1f, 0.48f, 0.19f };
-                //}
-                //else if (vertex.pos.y < 2.5f)
-                //{
-                //    vertex.normal = { 0.45f, 0.39f, 0.34f };
-                //}
-                //else
-                //{
-                //    vertex.normal = { 1.0f, 1.0f, 1.0f };
-                //}
+                float sinX = DirectX::XMScalarSinEst(vertex.pos.x * 16.0f / (m_gridWidth));
+                float cosZ = DirectX::XMScalarCosEst(vertex.pos.z * 16.0f / (m_gridWidth));
+                vertex.pos.y = (6.0f*(vertex.pos.z* sinX + vertex.pos.x*cosZ) + 0.5f) / m_gridWidth;
+
+                float sinXdx = (16.0f / (m_gridWidth)) * DirectX::XMScalarCosEst(vertex.pos.x * 16.0f / (m_gridWidth));
+                float cosZdz = -(16.0f / (m_gridWidth)) * DirectX::XMScalarSinEst(vertex.pos.z * 16.0f / (m_gridWidth));
+                DirectX::XMVECTOR normal = {
+                    -(6.0f * vertex.pos.z * sinXdx + cosZ) / m_gridWidth,
+                    1.0f,
+                    -(6.0f * vertex.pos.x * cosZdz + sinX) / m_gridWidth,
+                };
+                DirectX::XMStoreFloat3(&vertex.normal, DirectX::XMVector3Normalize(normal));
             }
         }
 
@@ -114,7 +102,7 @@ void LandAndWavesDemoLit::initialize()
         GeometryUtil::calculateVertexIndexCountsSquare(VERTICES_PER_SIDE, m_wavesVertexCount, m_wavesIndexCount);
 
         std::unique_ptr<uint16_t[]> pIndices = std::make_unique<uint16_t[]>(m_wavesIndexCount);
-        GeometryUtil::createSquare(width, VERTICES_PER_SIDE, m_wavesVertices, pIndices.get());
+        GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, m_wavesVertices, pIndices.get());
 
         D3D12Util::createAndUploadBuffer(pIndices.get(), m_wavesIndexCount * sizeof(uint16_t), m_pCommandList.Get(), &m_pWavesIndexBuffer, &m_pWavesIndexBufferUpload);
     }
@@ -247,11 +235,11 @@ void LandAndWavesDemoLit::initialize()
 
         desc.pRootSignature = m_pRootSignature.Get();
 
-        Microsoft::WRL::ComPtr<ID3DBlob> pVertexShader = D3D12Util::compileShader(L"data/shaders/chapter07/landAndWaves.hlsl", "vs", "vs_5_1");
+        Microsoft::WRL::ComPtr<ID3DBlob> pVertexShader = D3D12Util::compileShader(L"data/shaders/chapter08/landAndWavesLit.hlsl", "vs", "vs_5_1");
         desc.VS.pShaderBytecode = pVertexShader->GetBufferPointer();
         desc.VS.BytecodeLength = pVertexShader->GetBufferSize();
 
-        Microsoft::WRL::ComPtr<ID3DBlob> pPixelShader = D3D12Util::compileShader(L"data/shaders/chapter07/landAndWaves.hlsl", "ps", "ps_5_1");
+        Microsoft::WRL::ComPtr<ID3DBlob> pPixelShader = D3D12Util::compileShader(L"data/shaders/chapter08/landAndWavesLit.hlsl", "ps", "ps_5_1");
         desc.PS.pShaderBytecode = pPixelShader->GetBufferPointer();
         desc.PS.BytecodeLength = pPixelShader->GetBufferSize();
 
@@ -326,11 +314,29 @@ void LandAndWavesDemoLit::update(float dt)
                     iterationCoordScaleY = 4.25f * std::fmodf(iterationCoordScaleY * 123.0f, 43.0f);
                 }
                 m_wavesVertices[y][x].pos.y = scale*offset;
-                //m_wavesVertices[y][x].normal = {
-                //    0.2f + 0.01f * offset,
-                //    0.3f + 0.015f * offset,
-                //    0.6f + 0.03f * offset
-                //};
+
+                const uint16_t xPos = x < VERTICES_PER_SIDE - 1 ? x + 1 : x;
+                const uint16_t xNeg = x > 0 ? x - 1 : x;
+                float xStep = m_gridWidth / VERTICES_PER_SIDE;
+                if (x <= 0 || x >= VERTICES_PER_SIDE - 1)
+                {
+                    xStep *= 0.5f;
+                }
+
+                const uint16_t yPos = y < VERTICES_PER_SIDE - 1 ? y + 1 : y;
+                const uint16_t yNeg = y > 0 ? y - 1 : y;
+                float yStep = m_gridWidth / VERTICES_PER_SIDE;
+                if (y <= 0 || y >= VERTICES_PER_SIDE - 1)
+                {
+                    yStep *= 0.5f;
+                }
+                    
+                DirectX::XMVECTOR normal = {
+                    (m_wavesVertices[y][xPos].pos.y - m_wavesVertices[y][xNeg].pos.y) / xStep,
+                    1.0f,
+                    (m_wavesVertices[yPos][x].pos.y - m_wavesVertices[yNeg][x].pos.y) / yStep,
+                };
+                DirectX::XMStoreFloat3(&m_wavesVertices[y][x].normal, DirectX::XMVector3Normalize(normal));
             }
         }
         curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, m_wavesVertexCount * sizeof(Vertex));

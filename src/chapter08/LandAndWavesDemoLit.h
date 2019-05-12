@@ -24,7 +24,7 @@ public:
     virtual void onMouseMove(int16_t xPos, int16_t yPos, uint8_t buttons) override;
 
     virtual void initialize() override;
-    virtual void update(float /*dt*/) override;
+    virtual void update(float dt) override;
     virtual void render() override;
 
 private:
@@ -83,4 +83,6 @@ private:
     int16_t m_lastMouseY = 0;
     int16_t m_curMouseX = 0;
     int16_t m_curMouseY = 0;
+
+    static constexpr float m_gridWidth = 25.0f;
 };

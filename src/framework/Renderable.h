@@ -13,6 +13,7 @@ struct Renderable
     };
 
     struct Mesh* m_pMesh;
+    struct Material* m_pMaterial;
 
     D3D_PRIMITIVE_TOPOLOGY m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 

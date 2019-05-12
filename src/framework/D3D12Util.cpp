@@ -81,7 +81,7 @@ namespace D3D12Util
         if (FAILED(hr))
         {
             OutputDebugStringW(L"Error in D3D12Util::compileShader:\n");
-            if (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND))
+            if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
             {
                 OutputDebugStringW(L"Could not open file \"");
                 OutputDebugStringW(fileName);
