@@ -94,39 +94,100 @@ void LandAndWavesDemoLit::initialize()
             }
         }
 
-        m_landMesh.createVertexBuffer(p_landVertices.get(), landVertexCount, sizeof(Vertex), m_pCommandList.Get());
-        m_landMesh.createIndexBuffer(p_landIndices.get(), landIndexCount, sizeof(uint16_t), m_pCommandList.Get());
+        // not thread safe
+        size_t meshIndex = m_meshes.size();
+        Mesh landMesh;
+        landMesh.createVertexBuffer(p_landVertices.get(), landVertexCount, sizeof(Vertex), m_pCommandList.Get());
+        landMesh.createIndexBuffer(p_landIndices.get(), landIndexCount, sizeof(uint16_t), m_pCommandList.Get());
+        m_meshes.emplace_back(landMesh);
+
+        // not thread safe
+        Material landMaterial;
+        size_t materialIndex = m_materials.size();
+        landMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
+        landMaterial.m_cbIndex = 0u;
+        landMaterial.m_albedoColor = { 0.2f, 0.6f, 0.2f, 1.0f };
+        landMaterial.m_roughness = 0.9f;
+        m_materials.emplace_back(landMaterial);
+
+        Renderable landRenderable;
+        landRenderable.m_meshIndex = meshIndex;
+        landRenderable.m_materialIndex = materialIndex;
+        landRenderable.m_cbIndex = 0;
+        landRenderable.m_startIndex = 0;
+        landRenderable.m_baseVertex = 0;
+        landRenderable.m_indexCount = static_cast<UINT>(landIndexCount);
+        m_renderables.emplace_back(landRenderable);
     }
 
     {
-        GeometryUtil::calculateVertexIndexCountsSquare(VERTICES_PER_SIDE, m_wavesVertexCount, m_wavesIndexCount);
+        size_t wavesVertexCount;
+        size_t wavesIndexCount;
+        GeometryUtil::calculateVertexIndexCountsSquare(VERTICES_PER_SIDE, wavesVertexCount, wavesIndexCount);
 
-        std::unique_ptr<uint16_t[]> pIndices = std::make_unique<uint16_t[]>(m_wavesIndexCount);
+        std::unique_ptr<uint16_t[]> pIndices = std::make_unique<uint16_t[]>(wavesIndexCount);
         GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, m_wavesVertices, pIndices.get());
 
-        D3D12Util::createAndUploadBuffer(pIndices.get(), m_wavesIndexCount * sizeof(uint16_t), m_pCommandList.Get(), &m_pWavesIndexBuffer, &m_pWavesIndexBufferUpload);
+        // not thread safe
+        size_t meshIndex = m_meshes.size();
+        Mesh wavesMesh;
+        wavesMesh.m_indexCount = wavesIndexCount;
+        wavesMesh.m_indexSize = sizeof(uint16_t);
+        wavesMesh.m_vertexCount = wavesVertexCount;
+        wavesMesh.m_vertexSize[0] = sizeof(Vertex);
+        m_wavesMeshIndex = meshIndex;
+
+        D3D12Util::createAndUploadBuffer(pIndices.get(), wavesMesh.m_indexCount * wavesMesh.m_indexSize, m_pCommandList.Get(), &wavesMesh.m_pIndexBuffer, &wavesMesh.m_pIndexBufferUpload);
+        m_meshes.emplace_back(wavesMesh);
+
+        // not thread safe
+        size_t materialIndex = m_materials.size();
+        Material waterMaterial;
+        waterMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
+        waterMaterial.m_cbIndex = 1u;
+        waterMaterial.m_fresnelR0 = { 0.1f, 0.1f, 0.1f };
+        waterMaterial.m_albedoColor = { 0.0f, 0.2f, 0.6f, 1.0f };
+        waterMaterial.m_roughness = 0.0f;
+        m_materials.emplace_back(waterMaterial);
+        
+        Renderable wavesRenderable;
+        wavesRenderable.m_model._42 = -0.25f;
+        wavesRenderable.m_meshIndex = meshIndex;
+        wavesRenderable.m_materialIndex = materialIndex;
+        wavesRenderable.m_cbIndex = 1;
+        wavesRenderable.m_startIndex = 0;
+        wavesRenderable.m_baseVertex = 0;
+        wavesRenderable.m_indexCount = static_cast<UINT>(wavesIndexCount);
+        m_renderables.emplace_back(wavesRenderable);
     }
 
     for (FrameResources& frameResources : m_frameResources)
     {
         ThrowIfFailed(m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frameResources.m_pCommandAllocator)));
         frameResources.m_pCbPass = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), 1, sizeof(PassConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
-        frameResources.m_pCbObjects = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), 2u, sizeof(ObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
+        frameResources.m_pCbObjects = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), m_renderables.size(), sizeof(ObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
+        frameResources.m_pCbMaterials = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), m_renderables.size(), sizeof(MaterialConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
         frameResources.m_pDynamicVertices = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), landVertexCount, sizeof(Vertex));
     }
 
     {
+        D3D12_ROOT_PARAMETER1 materialCbParameter = {};
+        materialCbParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        materialCbParameter.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+        materialCbParameter.Descriptor.ShaderRegister = 0;
+
         D3D12_ROOT_PARAMETER1 objectCbParameter = {};
         objectCbParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
         objectCbParameter.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
-        objectCbParameter.Descriptor.ShaderRegister = 0;
+        objectCbParameter.Descriptor.ShaderRegister = 1;
 
         D3D12_ROOT_PARAMETER1 passCbParameter = {};
         passCbParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
         passCbParameter.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
-        passCbParameter.Descriptor.ShaderRegister = 1;
+        passCbParameter.Descriptor.ShaderRegister = 2;
 
         D3D12_ROOT_PARAMETER1 rootParameters[] = {
+            materialCbParameter,
             objectCbParameter,
             passCbParameter,
         };
@@ -274,17 +335,35 @@ void LandAndWavesDemoLit::update(float dt)
         DirectX::XMStoreFloat4x4(&passConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 100.0f));
         passConstants.time = m_timer.getElapsedTime();
         passConstants.dTime = dt;
+        passConstants.ambientLight = { 0.1f, 0.1f, 0.1f };
+        passConstants.cameraPositionW = m_camera.m_position;
+        passConstants.lightData[0].color = { 1.0f, 1.0f, 1.0f };
+        passConstants.lightData[0].direction = { 2.0f, -5.0f, 3.0f };
+        passConstants.directionalLightCount = 1u;
 
         curFrameResources.m_pCbPass->copyData(&passConstants, sizeof(PassConstants));
     }
 
+    for (const auto& renderable : m_renderables)
     {
-        ObjectConstants objectConstants[2];
-        DirectX::XMStoreFloat4x4(&objectConstants[0].world, DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-        curFrameResources.m_pCbObjects->copyData(&objectConstants[0], sizeof(ObjectConstants));
+        ObjectConstants objectConstants{};
+        objectConstants.world = renderable.m_model;
+        curFrameResources.m_pCbObjects->copyData(&objectConstants, sizeof(ObjectConstants), renderable.m_cbIndex * curFrameResources.m_pCbObjects->getElementSize());
+    }
 
-        DirectX::XMStoreFloat4x4(&objectConstants[1].world, DirectX::XMMatrixTranslation(0.0f, -0.25f, 0.0f));
-        curFrameResources.m_pCbObjects->copyData(&objectConstants[1], sizeof(ObjectConstants), 256u);
+    for (auto& material : m_materials)
+    {
+        if (material.m_framesDirtyCount > 0)
+        {
+            MaterialConstants materialConstants{};
+            materialConstants.albedoColor = material.m_albedoColor;
+            materialConstants.fresnelR0 = material.m_fresnelR0;
+            materialConstants.roughness = material.m_roughness;
+
+            curFrameResources.m_pCbMaterials->copyData(&materialConstants, sizeof(MaterialConstants), material.m_cbIndex * curFrameResources.m_pCbMaterials->getElementSize());
+
+            --material.m_framesDirtyCount;
+        }
     }
 
     {
@@ -339,7 +418,8 @@ void LandAndWavesDemoLit::update(float dt)
                 DirectX::XMStoreFloat3(&m_wavesVertices[y][x].normal, DirectX::XMVector3Normalize(normal));
             }
         }
-        curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, m_wavesVertexCount * sizeof(Vertex));
+        curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, m_meshes[m_wavesMeshIndex].m_vertexCount * m_meshes[m_wavesMeshIndex].m_vertexSize[0]);
+        m_meshes[m_wavesMeshIndex].m_pVertexBuffer[0] = curFrameResources.m_pDynamicVertices->getResourceComPtr();
     }
 };
 
@@ -362,7 +442,7 @@ void LandAndWavesDemoLit::render()
     m_pCommandList->ClearRenderTargetView(getCurrentBackBufferView(), clearColor, 0, nullptr);
 
     m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
-    m_pCommandList->SetGraphicsRootConstantBufferView(1, curFrameResources.m_pCbPass->getResource()->GetGPUVirtualAddress());
+    m_pCommandList->SetGraphicsRootConstantBufferView(2, curFrameResources.m_pCbPass->getResource()->GetGPUVirtualAddress());
 
     {
         D3D12_VIEWPORT viewport = {};
@@ -384,37 +464,25 @@ void LandAndWavesDemoLit::render()
     auto depthTarget = getCurrentDepthStencilView();
     m_pCommandList->OMSetRenderTargets(1, &renderTarget, true, &depthTarget);
 
+    for (const auto& renderable : m_renderables)
     {
-        m_pCommandList->SetGraphicsRootConstantBufferView(0, curFrameResources.m_pCbObjects->getResource()->GetGPUVirtualAddress());
+        D3D12_GPU_VIRTUAL_ADDRESS materialCbGpuAddress = curFrameResources.m_pCbMaterials->getResource()->GetGPUVirtualAddress();
+        materialCbGpuAddress += m_materials[renderable.m_materialIndex].m_cbIndex * curFrameResources.m_pCbMaterials->getElementSize();
+        m_pCommandList->SetGraphicsRootConstantBufferView(0, materialCbGpuAddress);
 
-        const D3D12_INDEX_BUFFER_VIEW indexBufferView = m_landMesh.getIndexBufferView();
+        D3D12_GPU_VIRTUAL_ADDRESS objectCbGpuAddress = curFrameResources.m_pCbObjects->getResource()->GetGPUVirtualAddress();
+        objectCbGpuAddress += renderable.m_cbIndex * curFrameResources.m_pCbObjects->getElementSize();
+        m_pCommandList->SetGraphicsRootConstantBufferView(1, objectCbGpuAddress);
+
+        const D3D12_INDEX_BUFFER_VIEW indexBufferView = m_meshes[renderable.m_meshIndex].getIndexBufferView();
         m_pCommandList->IASetIndexBuffer(&indexBufferView);
 
-        const D3D12_VERTEX_BUFFER_VIEW vertexBufferView = m_landMesh.getVertexBufferView();
+        const D3D12_VERTEX_BUFFER_VIEW vertexBufferView = m_meshes[renderable.m_meshIndex].getVertexBufferView();
         m_pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
-        m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pCommandList->IASetPrimitiveTopology(renderable.m_topology);
 
-        m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_landMesh.m_indexCount), 1u, 0u, 0u, 0u);
-    }
-    {
-        m_pCommandList->SetGraphicsRootConstantBufferView(0, curFrameResources.m_pCbObjects->getResource()->GetGPUVirtualAddress() + 256u);
-
-        D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
-        indexBufferView.BufferLocation = m_pWavesIndexBuffer->GetGPUVirtualAddress();
-        indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-        indexBufferView.SizeInBytes = static_cast<UINT>(m_wavesIndexCount) * sizeof(uint16_t);
-        m_pCommandList->IASetIndexBuffer(&indexBufferView);
-
-        D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
-        vertexBufferView.BufferLocation = curFrameResources.m_pDynamicVertices->getResource()->GetGPUVirtualAddress();
-        vertexBufferView.SizeInBytes = static_cast<UINT>(m_wavesVertexCount) * sizeof(Vertex);
-        vertexBufferView.StrideInBytes = static_cast<UINT>(sizeof(Vertex));
-        m_pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-
-        m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_wavesIndexCount), 1u, 0u, 0u, 0u);
+        m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_meshes[renderable.m_meshIndex].m_indexCount), 1u, 0u, 0u, 0u);
     }
 
     {

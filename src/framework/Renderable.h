@@ -12,8 +12,8 @@ struct Renderable
         0.0f,0.0f,0.0f,1.0f,
     };
 
-    struct Mesh* m_pMesh;
-    struct Material* m_pMaterial;
+    size_t m_meshIndex;
+    size_t m_materialIndex;
 
     D3D_PRIMITIVE_TOPOLOGY m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 

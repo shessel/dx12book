@@ -32,6 +32,7 @@ namespace D3D12Util
         MappedGPUBuffer& operator=(const MappedGPUBuffer& other) = delete;
 
         ID3D12Resource1* getResource() const { return m_pUploadBuffer.Get(); }
+        Microsoft::WRL::ComPtr<ID3D12Resource1> getResourceComPtr() const { return m_pUploadBuffer; }
         void copyData(const void* const data, const size_t dataSize, const size_t byteOffset = 0);
         const UINT getSize() const { return m_sizeInBytes; }
         const UINT getElementSize() const { return m_elementSizeInBytes; }

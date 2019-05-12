@@ -14,7 +14,8 @@ struct ArcBallCamera
     float m_phi = 0.0f;
     float m_theta = 0.0f;
     float m_distance = 1.0f;
-    DirectX::XMFLOAT3 m_center = { 0.0f, 0.0f, 0.0f };
+    DirectX::XMFLOAT3 m_position = { 0.0f, 0.0f, 1.0f };
+    DirectX::XMFLOAT3 m_focus = { 0.0f, 0.0f, 0.0f };
 
     DirectX::XMFLOAT4X4 m_matrix;
 };
