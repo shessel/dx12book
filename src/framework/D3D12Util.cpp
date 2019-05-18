@@ -76,7 +76,7 @@ namespace D3D12Util
 #endif
         UINT effectFlags = 0;
         Microsoft::WRL::ComPtr<ID3DBlob> pCode, pError;
-        HRESULT hr = D3DCompileFromFile(fileName, nullptr, nullptr, entryPoint, target, shaderFlags, effectFlags, pCode.GetAddressOf(), pError.GetAddressOf());
+        HRESULT hr = D3DCompileFromFile(fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, target, shaderFlags, effectFlags, pCode.GetAddressOf(), pError.GetAddressOf());
 
         if (FAILED(hr))
         {
