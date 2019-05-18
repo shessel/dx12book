@@ -1,6 +1,6 @@
 struct LightData
 {
-    float3 position;
+    float3 positionW;
     float falloffBegin;
     float3 direction;
     float falloffEnd;
@@ -74,40 +74,70 @@ VertexOutput vs(VertexInput vIn)
 float3 schlickFresnel(float cosTheta)
 {
     float f = saturate(1.0f - cosTheta);
-    return g_cbMaterial.fresnelR0 + (1.0f - g_cbMaterial.fresnelR0) * (f * f * f * f * f);
+    float ff = f * f;
+    float fffff = ff * ff * f;
+    return g_cbMaterial.fresnelR0 + fffff - fffff*g_cbMaterial.fresnelR0;
 }
 
-float3 computeBrdf(LightData light, float3 positionW, float3 normalW)
+float3 computeBrdf(LightData light, float3 positionW, float3 normalW, float3 cameraDirection, float3 lightDirection)
 {
-    float3 toCamera = g_cbPass.cameraPositionW - positionW;
-    float3 cameraDirection = normalize(toCamera);
-
-    float3 toLight = -light.direction;
-    float3 lightDirection = normalize(toLight);
 
     float3 halfway = normalize(cameraDirection + lightDirection);
 
     float nDotL = max(dot(normalW, lightDirection), 0.0f);
     float3 ambientLight = g_cbMaterial.albedoColor.xyz * g_cbPass.ambientLight;
-    float3 diffuseLight = g_cbMaterial.albedoColor.xyz;
+    float3 diffuseLight = g_cbMaterial.albedoColor.xyz * light.color;
 
     float m = (1.0f - g_cbMaterial.roughness) * 256.0f;
     float3 specularLight = schlickFresnel(dot(lightDirection, halfway)) * ((m + 8.0f) / 8.0f) * pow(dot(normalW, halfway), m);
     return ambientLight + nDotL * (diffuseLight + specularLight);
 }
 
-float3 computeDirectionalLights(float3 positionW, float3 normalW)
+float3 computeLights(float3 positionW, float3 normalW)
 {
-    float3 sumDirectionalLight = (float3) 0.0f;
+    float3 totalLight = (float3) 0.0f;
+    uint lightIndex = 0;
+
+    float3 toCamera = g_cbPass.cameraPositionW - positionW;
+    float3 cameraDirection = normalize(toCamera);
+
     for (uint i = 0; i < g_cbPass.directionalLightCount; ++i)
     {
-        sumDirectionalLight += computeBrdf(g_cbPass.lightData[i], positionW, normalW);
+        LightData curLight = g_cbPass.lightData[lightIndex];
+        float3 toLight = -curLight.direction;
+        float3 lightDirection = normalize(toLight);
+        totalLight += computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, cameraDirection, lightDirection);
+        ++lightIndex;
     }
-    return sumDirectionalLight;
+
+    for (uint j = 0; j < g_cbPass.pointLightCount; ++j)
+    {
+        LightData curLight = g_cbPass.lightData[lightIndex];
+        float3 toLight = curLight.positionW - positionW;
+        float3 lightDirection = normalize(toLight);
+        float distance = length(toLight);
+        float falloff = 1.0f - saturate((distance - curLight.falloffBegin) / (curLight.falloffEnd - curLight.falloffBegin));
+        totalLight += falloff* computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, cameraDirection, lightDirection);
+        ++lightIndex;
+    }
+
+    for (uint k = 0; k < g_cbPass.spotLightCount; ++k)
+    {
+        LightData curLight = g_cbPass.lightData[lightIndex];
+        float3 toLight = curLight.positionW - positionW;
+        float3 lightDirection = normalize(toLight);
+        float distance = length(toLight);
+        float falloff = 1.0f - saturate((distance - curLight.falloffBegin) / (curLight.falloffEnd - curLight.falloffBegin));
+        float coneFactor = max(pow(dot(-lightDirection, normalize(curLight.direction)), curLight.spotPower), 0.0f);
+        totalLight += falloff * coneFactor * computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, cameraDirection, lightDirection);
+        ++lightIndex;
+    }
+
+    return totalLight;
 }
 
 float4 ps(VertexOutput pIn) : SV_TARGET
 {
     float3 normal = normalize(pIn.normalW);
-    return float4(computeDirectionalLights(pIn.positionW, pIn.normalW), 1.0f);
+    return float4(computeLights(pIn.positionW, pIn.normalW), 1.0f);
 }

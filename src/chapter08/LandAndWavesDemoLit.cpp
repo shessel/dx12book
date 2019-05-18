@@ -335,11 +335,26 @@ void LandAndWavesDemoLit::update(float dt)
         DirectX::XMStoreFloat4x4(&passConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 100.0f));
         passConstants.time = m_timer.getElapsedTime();
         passConstants.dTime = dt;
-        passConstants.ambientLight = { 0.1f, 0.1f, 0.1f };
+        passConstants.ambientLight = { 0.05f, 0.05f, 0.05f };
         passConstants.cameraPositionW = m_camera.m_position;
+
         passConstants.lightData[0].color = { 1.0f, 1.0f, 1.0f };
         passConstants.lightData[0].direction = { 2.0f, -5.0f, 3.0f };
         passConstants.directionalLightCount = 1u;
+
+        passConstants.lightData[1].color = { 1.0f, 1.0f, 1.0f };
+        passConstants.lightData[1].position = { 0.0f, 5.0f, 0.0f };
+        passConstants.lightData[1].falloffBegin = 1.0f;
+        passConstants.lightData[1].falloffEnd = 10.0f;
+        passConstants.pointLightCount = 1u;
+
+        passConstants.lightData[2].color = { 1.0f, 1.0f, 1.0f };
+        passConstants.lightData[2].position = { 0.0f, 3.0f, 0.0f };
+        passConstants.lightData[2].direction = { -3.0f, -3.0f, -1.0f };
+        passConstants.lightData[2].falloffBegin = 1.0f;
+        passConstants.lightData[2].falloffEnd = 15.0f;
+        passConstants.lightData[2].spotPower = 8.0f;
+        passConstants.spotLightCount = 1u;
 
         curFrameResources.m_pCbPass->copyData(&passConstants, sizeof(PassConstants));
     }
@@ -367,7 +382,7 @@ void LandAndWavesDemoLit::update(float dt)
     }
 
     {
-        constexpr float scale = 0.05f;
+        constexpr float scale = 0.005f;
         for (uint16_t y = 0; y < VERTICES_PER_SIDE; ++y)
         {
             for (uint16_t x = 0; x < VERTICES_PER_SIDE; ++x)
