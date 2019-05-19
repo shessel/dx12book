@@ -22,7 +22,7 @@ void OutputDebugStringDxDebugException(const DxDebugException& exception);
     HRESULT __debug_util_hr_for_expression = expression;\
     if (FAILED(__debug_util_hr_for_expression))\
     {\
-        const wchar_t *const filename = L"" __FILE__;\
-        throw DxDebugException(__debug_util_hr_for_expression, L#expression, filename, __LINE__);\
+        const wchar_t *const __debug_util_filename = L"" __FILE__;\
+        throw DxDebugException(__debug_util_hr_for_expression, L#expression, __debug_util_filename, __LINE__);\
     }\
 }
