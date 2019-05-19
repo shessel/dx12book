@@ -9,10 +9,11 @@ target_sources(framework PRIVATE
     GeometryUtil.cpp
     Mesh.cpp
     Renderable.cpp
+    DdsTexture.cpp
     Timer.cpp)
 target_compile_features(framework PUBLIC cxx_std_17)
 target_include_directories(framework INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(framework PRIVATE dxgi.lib d3d12.lib d3dcompiler.lib)
+target_link_libraries(framework PRIVATE dxgi.lib d3d12.lib d3dcompiler.lib DDSTextureLoader)
 
 # adapted from https://arne-mertz.de/2018/07/cmake-properties-options/
 if (MSVC)

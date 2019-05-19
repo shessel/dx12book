@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 #include "windowsx.h"
@@ -41,6 +43,9 @@ protected:
     D3D12_CPU_DESCRIPTOR_HANDLE getCurrentBackBufferView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE getCurrentDepthStencilView() const;
     void flushCommandQueue();
+
+    static constexpr size_t m_staticSamplerCount = 6;
+    std::array<D3D12_STATIC_SAMPLER_DESC, m_staticSamplerCount> createDefaultStaticSamplerDescs() const;
 
     HINSTANCE m_hInstance;
     HWND m_hWnd;

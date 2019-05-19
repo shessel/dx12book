@@ -285,3 +285,40 @@ void AppBase::flushCommandQueue()
         CloseHandle(eventHandle);
     }
 }
+
+std::array<D3D12_STATIC_SAMPLER_DESC, AppBase::m_staticSamplerCount> AppBase::createDefaultStaticSamplerDescs() const
+{
+    D3D12_STATIC_SAMPLER_DESC pointWrap = {};
+    pointWrap.AddressU = pointWrap.AddressV = pointWrap.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    pointWrap.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    pointWrap.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    pointWrap.MinLOD = 0.0f;
+    pointWrap.MaxLOD = D3D12_FLOAT32_MAX;
+    pointWrap.MipLODBias = 0.0f;
+    pointWrap.MaxAnisotropy = 16u;
+    pointWrap.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    pointWrap.RegisterSpace = 0u;
+    pointWrap.ShaderRegister = 0u;
+
+    D3D12_STATIC_SAMPLER_DESC pointClamp = pointWrap;
+    pointClamp.AddressU = pointClamp.AddressV = pointClamp.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    pointClamp.ShaderRegister = 1u;
+
+    D3D12_STATIC_SAMPLER_DESC linearWrap = pointWrap;
+    linearWrap.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    linearWrap.ShaderRegister = 2u;
+
+    D3D12_STATIC_SAMPLER_DESC linearClamp = linearWrap;
+    linearClamp.AddressU = linearClamp.AddressV = linearClamp.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    linearClamp.ShaderRegister = 3u;
+
+    D3D12_STATIC_SAMPLER_DESC anisotropicWrap = pointWrap;
+    anisotropicWrap.Filter = D3D12_FILTER_ANISOTROPIC;
+    anisotropicWrap.ShaderRegister = 4u;
+
+    D3D12_STATIC_SAMPLER_DESC anisotropicClamp = anisotropicWrap;
+    anisotropicClamp.AddressU = anisotropicClamp.AddressV = anisotropicClamp.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    anisotropicClamp.ShaderRegister = 5u;
+
+    return { pointWrap, pointClamp, linearWrap, linearClamp, anisotropicWrap, anisotropicClamp };
+}
