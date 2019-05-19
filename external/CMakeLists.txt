@@ -5,4 +5,4 @@ target_include_directories(DirectXMath INTERFACE DirectXMath/Inc)
 
 add_library(DDSTextureLoader)
 target_sources(DDSTextureLoader PRIVATE DDSTextureLoader/DDSTextureLoader12.cpp)
-target_include_directories(DirectXMath INTERFACE DDSTextureLoader)
+target_include_directories(DDSTextureLoader INTERFACE DDSTextureLoader)
