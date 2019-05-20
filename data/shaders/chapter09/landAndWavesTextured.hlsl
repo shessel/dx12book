@@ -97,5 +97,5 @@ VertexOutput vs(VertexInput vIn)
 float4 ps(VertexOutput pIn) : SV_TARGET
 {
     float3 normal = normalize(pIn.normalW);
-    return float4(computeLights(pIn.positionW, pIn.normalW), 1.0f) * g_tex.Sample(g_samplerPointWrap, pIn.uv);
+    return float4(computeLights(pIn.positionW, pIn.normalW), 1.0f) * g_tex.Sample(g_samplerLinearWrap, pIn.uv);
 }

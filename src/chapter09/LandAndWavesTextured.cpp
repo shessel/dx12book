@@ -103,7 +103,7 @@ void LandAndWavesTextured::initialize()
 
         // not thread safe
         size_t textureIndex = m_textures.size();
-        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/brown_mud_leaves_01_diff_1k.dds");
+        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/brown_mud_leaves_01_diff_1k_bc1.dds");
 
         // not thread safe
         Material landMaterial;
@@ -148,7 +148,7 @@ void LandAndWavesTextured::initialize()
 
         // not thread safe
         size_t textureIndex = m_textures.size();
-        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/Water_001_COLOR.dds");
+        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/Water_001_COLOR_bc1.dds");
 
         // not thread safe
         size_t materialIndex = m_materials.size();
