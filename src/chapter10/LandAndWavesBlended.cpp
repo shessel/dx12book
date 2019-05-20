@@ -124,7 +124,7 @@ void LandAndWavesBlended::initialize()
         landRenderable.m_startIndex = 0;
         landRenderable.m_baseVertex = 0;
         landRenderable.m_indexCount = static_cast<UINT>(landIndexCount);
-        m_renderables.emplace_back(landRenderable);
+        m_opaqueRenderables.emplace_back(landRenderable);
     }
 
     {
@@ -163,7 +163,7 @@ void LandAndWavesBlended::initialize()
         waterMaterial.m_diffuseTextureIndex = textureIndex;
         m_materials.emplace_back(waterMaterial);
         
-        m_waveRenderableIndex = m_renderables.size();
+        m_waveRenderableIndex = m_transparentRenderables.size();
         Renderable wavesRenderable;
         wavesRenderable.m_model._42 = -0.25f;
         wavesRenderable.m_meshIndex = meshIndex;
@@ -172,7 +172,7 @@ void LandAndWavesBlended::initialize()
         wavesRenderable.m_startIndex = 0;
         wavesRenderable.m_baseVertex = 0;
         wavesRenderable.m_indexCount = static_cast<UINT>(wavesIndexCount);
-        m_renderables.emplace_back(wavesRenderable);
+        m_transparentRenderables.emplace_back(wavesRenderable);
     }
 
     {
@@ -205,10 +205,11 @@ void LandAndWavesBlended::initialize()
 
     for (FrameResources& frameResources : m_frameResources)
     {
+        size_t totalRenderableCount = m_opaqueRenderables.size() + m_transparentRenderables.size();
         ThrowIfFailed(m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frameResources.m_pCommandAllocator)));
         frameResources.m_pCbPass = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), 1, sizeof(PassConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
-        frameResources.m_pCbObjects = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), m_renderables.size(), sizeof(ObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
-        frameResources.m_pCbMaterials = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), m_renderables.size(), sizeof(MaterialConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
+        frameResources.m_pCbObjects = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), totalRenderableCount, sizeof(ObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
+        frameResources.m_pCbMaterials = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), totalRenderableCount, sizeof(MaterialConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
         frameResources.m_pDynamicVertices = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), landVertexCount, sizeof(Vertex));
     }
 
@@ -442,7 +443,7 @@ void LandAndWavesBlended::update(float dt)
             }
         }
 
-        const auto& waveRenderable = m_renderables[m_waveRenderableIndex];
+        const auto& waveRenderable = m_transparentRenderables[m_waveRenderableIndex];
         auto& waveMesh = m_meshes[waveRenderable.m_meshIndex];
         curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, waveMesh.m_vertexCount * waveMesh.m_vertexSize[0]);
         waveMesh.m_pVertexBuffer[0] = curFrameResources.m_pDynamicVertices->getResourceComPtr();
@@ -488,7 +489,7 @@ void LandAndWavesBlended::update(float dt)
         curFrameResources.m_pCbPass->copyData(&passConstants, sizeof(PassConstants));
     }
 
-    for (const auto& renderable : m_renderables)
+    auto updateObjectCbContents = [&curFrameResources](const Renderable& renderable)
     {
         ObjectConstants objectConstants{};
         objectConstants.world = renderable.m_model;
@@ -496,6 +497,16 @@ void LandAndWavesBlended::update(float dt)
         objectConstants.texCoordTransformColumn1 = { 0.0f, 1.0f };
         objectConstants.texCoordOffset = { 0.0f, 0.0f };
         curFrameResources.m_pCbObjects->copyData(&objectConstants, sizeof(ObjectConstants), renderable.m_cbIndex * curFrameResources.m_pCbObjects->getElementSize());
+    };
+
+    for (const auto& renderable : m_opaqueRenderables)
+    {
+        updateObjectCbContents(renderable);
+    }
+
+    for (const auto& renderable : m_transparentRenderables)
+    {
+        updateObjectCbContents(renderable);
     }
 
     for (auto& material : m_materials)
@@ -560,7 +571,7 @@ void LandAndWavesBlended::render()
     auto depthTarget = getCurrentDepthStencilView();
     m_pCommandList->OMSetRenderTargets(1, &renderTarget, true, &depthTarget);
 
-    for (const auto& renderable : m_renderables)
+    auto renderRenderable = [&](const Renderable & renderable)
     {
         D3D12_GPU_VIRTUAL_ADDRESS materialCbGpuAddress = curFrameResources.m_pCbMaterials->getResource()->GetGPUVirtualAddress();
         materialCbGpuAddress += m_materials[renderable.m_materialIndex].m_cbIndex * curFrameResources.m_pCbMaterials->getElementSize();
@@ -583,6 +594,16 @@ void LandAndWavesBlended::render()
         m_pCommandList->IASetPrimitiveTopology(renderable.m_topology);
 
         m_pCommandList->DrawIndexedInstanced(static_cast<UINT>(m_meshes[renderable.m_meshIndex].m_indexCount), 1u, 0u, 0u, 0u);
+    };
+
+    for (const auto& renderable : m_opaqueRenderables)
+    {
+        renderRenderable(renderable);
+    }
+
+    for (const auto& renderable : m_transparentRenderables)
+    {
+        renderRenderable(renderable);
     }
 
     {

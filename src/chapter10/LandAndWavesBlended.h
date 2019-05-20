@@ -101,7 +101,8 @@ private:
     static constexpr uint16_t VERTICES_PER_SIDE = 100u;
     size_t m_curFrameResourcesIndex = 0u;
     FrameResources m_frameResources[FRAME_RESOURCES_COUNT];
-    std::vector<Renderable> m_renderables;
+    std::vector<Renderable> m_opaqueRenderables;
+    std::vector<Renderable> m_transparentRenderables;
     std::vector<Material> m_materials;
     std::vector<Mesh> m_meshes;
     std::vector<DdsTexture> m_textures;
