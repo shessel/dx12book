@@ -1,0 +1,1 @@
+square_parquet-diffuse.dds is CC0 from https://www.sharetextures.com/textures/wood/square-parquet/
