@@ -27,8 +27,8 @@ void ShapesDemo::initialize()
 
         static constexpr GeometryUtil::VertexAttributeDesc attributeCollection[] =
         {
-            {GeometryUtil::POSITION, 0u},
-            {GeometryUtil::NORMAL, 12u},
+            {GeometryUtil::VertexAttributeType::POSITION, 0u},
+            {GeometryUtil::VertexAttributeType::NORMAL, 12u},
         };
 
         static constexpr GeometryUtil::VertexDesc vertexDesc = {

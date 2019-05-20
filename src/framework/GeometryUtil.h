@@ -4,13 +4,11 @@
 
 namespace GeometryUtil
 {
-    enum VertexAttributeType
+    enum class VertexAttributeType
     {
         POSITION,
         UV,
         NORMAL,
-        TANGENT_U,
-        TANGENT_V,
         UNINITIALIZED, // ignored during geometry generation, use to leave space for custom attribs
     };
 
@@ -29,9 +27,9 @@ namespace GeometryUtil
 
     constexpr VertexAttributeDesc defaultAttributeCollection[] =
     {
-        {POSITION, 0u},
-        {UV, 12u},
-        {NORMAL, 20u},
+        {VertexAttributeType::POSITION, 0u},
+        {VertexAttributeType::UV, 12u},
+        {VertexAttributeType::NORMAL, 20u},
     };
 
     constexpr VertexDesc defaultVertexDesc = {

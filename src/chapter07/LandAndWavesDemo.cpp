@@ -67,8 +67,8 @@ void LandAndWavesDemo::initialize()
 
 
     static constexpr GeometryUtil::VertexAttributeDesc attributeDescs[] = {
-        {GeometryUtil::POSITION, 0u},
-        {GeometryUtil::UNINITIALIZED, 12u},
+        {GeometryUtil::VertexAttributeType::POSITION, 0u},
+        {GeometryUtil::VertexAttributeType::UNINITIALIZED, 12u},
     };
 
     static constexpr GeometryUtil::VertexDesc vertexDesc = {

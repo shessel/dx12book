@@ -63,7 +63,7 @@ namespace GeometryUtil
         size_t vertexPositionByteOffset = 0u;
         for (size_t i = 0; i < vertexDesc.attributeCount; ++i)
         {
-            if (vertexDesc.pAttributeDescs[i].attributeType == POSITION)
+            if (vertexDesc.pAttributeDescs[i].attributeType == VertexAttributeType::POSITION)
             {
                 assert(vertexPositionByteOffset == 0);
                 vertexPositionByteOffset = vertexDesc.pAttributeDescs[i].attributeByteOffset;
@@ -80,13 +80,13 @@ namespace GeometryUtil
                     const auto& desc = vertexDesc.pAttributeDescs[i];
                     switch (desc.attributeType)
                     {
-                    case POSITION:
+                    case VertexAttributeType::POSITION:
                     {
                         DirectX::XMFLOAT3* pos = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
                         *pos = vertexPosition;
                     }
                     break;
-                    case UV:
+                    case VertexAttributeType::UV:
                     {
                         DirectX::XMFLOAT2* uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
                         *uv = {
@@ -98,7 +98,7 @@ namespace GeometryUtil
                         }
                     }
                     break;
-                    case NORMAL:
+                    case VertexAttributeType::NORMAL:
                     {
                         DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
                         *normal = vertexPosition;
@@ -225,13 +225,13 @@ namespace GeometryUtil
                                 const auto& desc = vertexDesc.pAttributeDescs[i];
                                 switch (desc.attributeType)
                                 {
-                                case POSITION:
+                                case VertexAttributeType::POSITION:
                                 {
                                     DirectX::XMFLOAT3* pos = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
                                     *pos = newVertexPosition;
                                 }
                                 break;
-                                case UV:
+                                case VertexAttributeType::UV:
                                 {
                                     DirectX::XMFLOAT2* uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
                                     *uv = {
@@ -243,7 +243,7 @@ namespace GeometryUtil
                                     }
                                 }
                                 break;
-                                case NORMAL:
+                                case VertexAttributeType::NORMAL:
                                 {
                                     DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
                                     *normal = newVertexPosition;
@@ -304,13 +304,13 @@ namespace GeometryUtil
                     const auto& desc = vertexDesc.pAttributeDescs[i];
                     switch (desc.attributeType)
                     {
-                    case POSITION:
+                    case VertexAttributeType::POSITION:
                     {
                         DirectX::XMFLOAT3* pos = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
                         *pos = { x, 0.0f, y };
                     }
                     break;
-                    case UV:
+                    case VertexAttributeType::UV:
                     {
                         DirectX::XMFLOAT2 *uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
                         *uv = {
@@ -319,7 +319,7 @@ namespace GeometryUtil
                         };
                     }
                     break;
-                    case NORMAL:
+                    case VertexAttributeType::NORMAL:
                     {
                         DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
                         *normal = { 0.0f, 1.0f, 0.0f };
