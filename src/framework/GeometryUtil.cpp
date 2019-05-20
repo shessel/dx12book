@@ -11,11 +11,6 @@
 
 namespace GeometryUtil
 {
-    struct Vertex {
-        DirectX::XMFLOAT3 pos;
-        DirectX::XMFLOAT3 col;
-    };
-
     void calculateVertexIndexCountsGeoSphere(uint8_t subdivisions, size_t& vertexCount, size_t& indexCount)
     {
         /*
@@ -40,27 +35,80 @@ namespace GeometryUtil
         indexCount = 3 * 20 * (1 << (subdivisions * 2));
     }
 
-    void createGeoSphere(const float radius, const uint8_t subdivisions, void* const vertices, void* const indices)
+    void createGeoSphere(const float radius, const uint8_t subdivisions, void* const vertices, void* const indices, const VertexDesc& vertexDesc)
     {
         const float phi = 1.6180339887f;
         const float distFromCenter = std::sqrtf(phi * phi + 1.0f);
         const float normalizationFactor = radius / distFromCenter;
         const float phiNorm = phi * normalizationFactor;
         const float oneNorm = normalizationFactor;
-        const Vertex baseVertices[] = {
-            {{0.0f,  phiNorm,  oneNorm}, DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f)},
-            {{0.0f,  phiNorm, -oneNorm}, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)},
-            {{0.0f, -phiNorm,  oneNorm}, DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f)},
-            {{0.0f, -phiNorm, -oneNorm}, DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)},
-            {{-oneNorm, 0.0f,  phiNorm}, DirectX::XMFLOAT3(0.0f, 1.0f, 1.0f)},
-            {{ oneNorm, 0.0f,  phiNorm}, DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)},
-            {{-oneNorm, 0.0f, -phiNorm}, DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f)},
-            {{ oneNorm, 0.0f, -phiNorm}, DirectX::XMFLOAT3(1.0f, 0.0f, 1.0f)},
-            {{-phiNorm,  oneNorm, 0.0f}, DirectX::XMFLOAT3(0.2f, 0.2f, 0.2f)},
-            {{ phiNorm,  oneNorm, 0.0f}, DirectX::XMFLOAT3(0.4f, 0.4f, 0.4f)},
-            {{-phiNorm, -oneNorm, 0.0f}, DirectX::XMFLOAT3(0.6f, 0.6f, 0.6f)},
-            {{ phiNorm, -oneNorm, 0.0f}, DirectX::XMFLOAT3(0.8f, 0.8f, 0.8f)},
+
+        const DirectX::XMFLOAT3 baseVertexPositions[] = {
+            {0.0f,  phiNorm,  oneNorm},
+            {0.0f,  phiNorm, -oneNorm},
+            {0.0f, -phiNorm,  oneNorm},
+            {0.0f, -phiNorm, -oneNorm},
+            {-oneNorm, 0.0f,  phiNorm},
+            { oneNorm, 0.0f,  phiNorm},
+            {-oneNorm, 0.0f, -phiNorm},
+            { oneNorm, 0.0f, -phiNorm},
+            {-phiNorm,  oneNorm, 0.0f},
+            { phiNorm,  oneNorm, 0.0f},
+            {-phiNorm, -oneNorm, 0.0f},
+            { phiNorm, -oneNorm, 0.0f},
         };
+
+        const std::unique_ptr<uint8_t[]> baseVertexBytes = std::make_unique<uint8_t[]>(12u * vertexDesc.stride);
+
+        size_t vertexPositionByteOffset = 0u;
+        for (size_t i = 0; i < vertexDesc.attributeCount; ++i)
+        {
+            if (vertexDesc.pAttributeDescs[i].attributeType == POSITION)
+            {
+                assert(vertexPositionByteOffset == 0);
+                vertexPositionByteOffset = vertexDesc.pAttributeDescs[i].attributeByteOffset;
+            }
+        }
+
+        {
+            uint8_t* curVertexByte = reinterpret_cast<uint8_t*>(baseVertexBytes.get());
+            for (size_t baseVertexId = 0; baseVertexId < 12u; ++baseVertexId)
+            {
+                const auto& vertexPosition = baseVertexPositions[baseVertexId];
+                for (size_t i = 0; i < vertexDesc.attributeCount; ++i)
+                {
+                    const auto& desc = vertexDesc.pAttributeDescs[i];
+                    switch (desc.attributeType)
+                    {
+                    case POSITION:
+                    {
+                        DirectX::XMFLOAT3* pos = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
+                        *pos = vertexPosition;
+                    }
+                    break;
+                    case UV:
+                    {
+                        DirectX::XMFLOAT2* uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
+                        *uv = {
+                            DirectX::XMScalarACos(vertexPosition.y) / DirectX::XM_PI,
+                            0.5f * DirectX::XMScalarACos(vertexPosition.z) / DirectX::XM_PI,
+                        };
+                        if (vertexPosition.x < 0) {
+                            uv->y = 1.0f - uv->y;
+                        }
+                    }
+                    break;
+                    case NORMAL:
+                    {
+                        DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
+                        *normal = vertexPosition;
+                    }
+                    break;
+                    }
+                }
+                curVertexByte += vertexDesc.stride;
+            }
+        }
 
         constexpr uint16_t baseIndices[] = {
             0, 5, 4,
@@ -85,7 +133,7 @@ namespace GeometryUtil
             2, 10, 4,
         };
 
-        std::unique_ptr<Vertex[]> tmpVertices;
+        std::unique_ptr<uint8_t[]> tmpVertexBytes;
         std::unique_ptr<uint16_t[]> tmpIndices;
 
         if (subdivisions > 0u)
@@ -94,17 +142,17 @@ namespace GeometryUtil
             size_t tmpVertexBufferVertexCount;
             size_t tmpIndexBufferIndexCount;
             calculateVertexIndexCountsGeoSphere(subdivisions - 1, tmpVertexBufferVertexCount, tmpIndexBufferIndexCount);
-            tmpVertices = std::make_unique<Vertex[]>(tmpVertexBufferVertexCount);
+            tmpVertexBytes = std::make_unique<uint8_t[]>(tmpVertexBufferVertexCount * vertexDesc.stride);
             tmpIndices = std::make_unique<uint16_t[]>(tmpIndexBufferIndexCount);
         }
 
         // last iteration should target final buffer so starting dst/src depends on number of subdivisions
-        Vertex* dstVertices = subdivisions % 2 == 1 ? reinterpret_cast<Vertex*>(vertices) : tmpVertices.get();
+        uint8_t* dstVertices = subdivisions % 2 == 1 ? reinterpret_cast<uint8_t*>(vertices) : tmpVertexBytes.get();
         uint16_t* dstIndices = subdivisions % 2 == 1 ? reinterpret_cast<uint16_t*>(indices) : tmpIndices.get();
-        Vertex* srcVertices = subdivisions % 2 == 1 ? tmpVertices.get() : reinterpret_cast<Vertex*>(vertices);
+        uint8_t* srcVertices = subdivisions % 2 == 1 ? tmpVertexBytes.get() : reinterpret_cast<uint8_t*>(vertices);
         uint16_t* srcIndices = subdivisions % 2 == 1 ? tmpIndices.get() : reinterpret_cast<uint16_t*>(indices);
 
-        std::memcpy(srcVertices, baseVertices, sizeof(baseVertices));
+        std::memcpy(srcVertices, baseVertexBytes.get(), (12u * vertexDesc.stride));
         std::memcpy(srcIndices, baseIndices, sizeof(baseIndices));
 
         if (subdivisions > 0u)
@@ -127,7 +175,7 @@ namespace GeometryUtil
                 calculateVertexIndexCountsGeoSphere(iteration, vertexCountLastIteration, indexCountLastIteration);
 
                 // copy new vertices from last iteration
-                std::memcpy(dstVertices + vertexCopyOffset, srcVertices + vertexCopyOffset, (vertexCountLastIteration - vertexCopyOffset) * sizeof(Vertex));
+                std::memcpy(dstVertices + vertexCopyOffset * vertexDesc.stride, srcVertices + vertexCopyOffset * vertexDesc.stride, (vertexCountLastIteration - vertexCopyOffset) * vertexDesc.stride);
                 std::memcpy(dstIndices + indexCopyOffset, srcIndices + indexCopyOffset, (indexCountLastIteration - indexCopyOffset) * sizeof(uint16_t));
 
                 uint16_t nextFreeVertexIndex = static_cast<uint16_t>(vertexCountLastIteration);
@@ -138,10 +186,10 @@ namespace GeometryUtil
                 for (size_t srcTriangleIndex = 0; srcTriangleIndex < indexCountLastIteration; srcTriangleIndex += 3)
                 {
                     const uint16_t *const triangle = &srcIndices[srcTriangleIndex];
-                    const Vertex triangleVertices[] = {
-                        srcVertices[triangle[0]],
-                        srcVertices[triangle[1]],
-                        srcVertices[triangle[2]],
+                    const DirectX::XMFLOAT3 triangleVertexPositions[] = {
+                        *reinterpret_cast<DirectX::XMFLOAT3*>(srcVertices + triangle[0] * vertexDesc.stride + vertexPositionByteOffset),
+                        *reinterpret_cast<DirectX::XMFLOAT3*>(srcVertices + triangle[1] * vertexDesc.stride + vertexPositionByteOffset),
+                        *reinterpret_cast<DirectX::XMFLOAT3*>(srcVertices + triangle[2] * vertexDesc.stride + vertexPositionByteOffset),
                     };
 
                     uint16_t newVertexIndices[3] = {};
@@ -162,18 +210,47 @@ namespace GeometryUtil
                         if (newVertexIndex == 0)
                         {
                             newVertexIndex = nextFreeVertexIndex++;
-                            DirectX::XMVECTOR xmvPos0 = DirectX::XMLoadFloat3(&triangleVertices[edgeIndex].pos);
-                            DirectX::XMVECTOR xmvPos1 = DirectX::XMLoadFloat3(&triangleVertices[(edgeIndex + 1) % 3].pos);
+                            DirectX::XMVECTOR xmvPos0 = DirectX::XMLoadFloat3(&triangleVertexPositions[edgeIndex]);
+                            DirectX::XMVECTOR xmvPos1 = DirectX::XMLoadFloat3(&triangleVertexPositions[(edgeIndex + 1) % 3]);
                             xmvPos0 = DirectX::XMVectorAdd(xmvPos0, xmvPos1);
                             xmvPos0 = DirectX::XMVector3Normalize(xmvPos0);
                             xmvPos0 = DirectX::XMVectorScale(xmvPos0, radius);
-                            DirectX::XMStoreFloat3(&dstVertices[newVertexIndex].pos, xmvPos0);
 
-                            dstVertices[newVertexIndex].col = {
-                                srcTriangleIndex * 1.0f / indexCountLastIteration,
-                                srcTriangleIndex * 1.0f / indexCountLastIteration,
-                                srcTriangleIndex * 1.0f / indexCountLastIteration
-                            };
+                            DirectX::XMFLOAT3 newVertexPosition;
+                            DirectX::XMStoreFloat3(&newVertexPosition, xmvPos0);
+
+                            uint8_t* curVertexByte = dstVertices + newVertexIndex * vertexDesc.stride;
+                            for (size_t i = 0; i < vertexDesc.attributeCount; ++i)
+                            {
+                                const auto& desc = vertexDesc.pAttributeDescs[i];
+                                switch (desc.attributeType)
+                                {
+                                case POSITION:
+                                {
+                                    DirectX::XMFLOAT3* pos = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
+                                    *pos = newVertexPosition;
+                                }
+                                break;
+                                case UV:
+                                {
+                                    DirectX::XMFLOAT2* uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
+                                    *uv = {
+                                        DirectX::XMScalarACos(newVertexPosition.y) / DirectX::XM_PI,
+                                        0.5f * DirectX::XMScalarACos(newVertexPosition.z) / DirectX::XM_PI,
+                                    };
+                                    if (newVertexPosition.x < 0) {
+                                        uv->y = 1.0f - uv->y;
+                                    }
+                                }
+                                break;
+                                case NORMAL:
+                                {
+                                    DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
+                                    *normal = newVertexPosition;
+                                }
+                                break;
+                                }
+                            }
                         }
                         newVertexIndices[edgeIndex] = newVertexIndex;
                     }
@@ -209,12 +286,8 @@ namespace GeometryUtil
         indexCount = 6 * (vertexCount - 2 * vertexCountPerSide + 1);
     }
 
-    void createSquare(const float width, const uint16_t vertexCountPerSide, void* const vertices, void* const indices)
+    void createSquare(const float width, const uint16_t vertexCountPerSide, void* const vertices, void* const indices, const VertexDesc& vertexDesc)
     {
-        size_t vertexCount;
-        size_t indexCount;
-        calculateVertexIndexCountsSquare(vertexCountPerSide, vertexCount, indexCount);
-
         const float stepSize = width / (vertexCountPerSide - 1);
         const float start = -width / 2.0f;
         float x = start;
@@ -226,9 +299,9 @@ namespace GeometryUtil
             x = start;
             for (size_t yOffset = 0; yOffset < vertexCountPerSide; ++yOffset)
             {
-                for (size_t i = 0; i < defaultVertexDesc.attributeCount; ++i)
+                for (size_t i = 0; i < vertexDesc.attributeCount; ++i)
                 {
-                    const auto& desc = defaultVertexDesc.pAttributeDescs[i];
+                    const auto& desc = vertexDesc.pAttributeDescs[i];
                     switch (desc.attributeType)
                     {
                     case POSITION:
@@ -254,7 +327,7 @@ namespace GeometryUtil
                     break;
                     }
                 }
-                curVertexByte += defaultVertexDesc.stride;
+                curVertexByte += vertexDesc.stride;
                 x += stepSize;
             }
             y += stepSize;

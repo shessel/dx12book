@@ -65,6 +65,16 @@ void LandAndWavesDemo::initialize()
 
     ThrowIfFailed(m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFrameFence)));
 
+
+    static constexpr GeometryUtil::VertexAttributeDesc attributeDescs[] = {
+        {GeometryUtil::POSITION, 0u},
+        {GeometryUtil::UNINITIALIZED, 12u},
+    };
+
+    static constexpr GeometryUtil::VertexDesc vertexDesc = {
+        sizeof(attributeDescs) / sizeof(GeometryUtil::VertexAttributeDesc), attributeDescs, 24u,
+    };
+
     constexpr float width = 25.0f;
     size_t landVertexCount;
     {
@@ -73,7 +83,7 @@ void LandAndWavesDemo::initialize()
 
         std::unique_ptr<Vertex[]> p_landVertices = std::make_unique<Vertex[]>(landVertexCount);
         std::unique_ptr<uint16_t[]> p_landIndices = std::make_unique<uint16_t[]>(landIndexCount);
-        GeometryUtil::createSquare(width, VERTICES_PER_SIDE, p_landVertices.get(), p_landIndices.get());
+        GeometryUtil::createSquare(width, VERTICES_PER_SIDE, p_landVertices.get(), p_landIndices.get(), vertexDesc);
 
         for (uint16_t y = 0; y < VERTICES_PER_SIDE; ++y)
         {
@@ -83,26 +93,26 @@ void LandAndWavesDemo::initialize()
                 float sinX = DirectX::XMScalarSinEst(vertex.pos.x * 16.0f / (width));
                 float cosZ = DirectX::XMScalarCosEst(vertex.pos.z * 16.0f / (width));
                 vertex.pos.y = (6.0f*(vertex.pos.z* sinX + vertex.pos.x*cosZ) + 0.5f) / width;
-                //if (vertex.pos.y < 0.5f)
-                //{
-                //    vertex.normal = { 1.0f, 0.96f, 0.62f };
-                //}
-                //else if (vertex.pos.y < 1.0f)
-                //{
-                //    vertex.normal = { 0.48f, 0.77f, 0.46f };
-                //}
-                //else if (vertex.pos.y < 2.0f)
-                //{
-                //    vertex.normal = { 0.1f, 0.48f, 0.19f };
-                //}
-                //else if (vertex.pos.y < 2.5f)
-                //{
-                //    vertex.normal = { 0.45f, 0.39f, 0.34f };
-                //}
-                //else
-                //{
-                //    vertex.normal = { 1.0f, 1.0f, 1.0f };
-                //}
+                if (vertex.pos.y < 0.5f)
+                {
+                    vertex.color = { 1.0f, 0.96f, 0.62f };
+                }
+                else if (vertex.pos.y < 1.0f)
+                {
+                    vertex.color = { 0.48f, 0.77f, 0.46f };
+                }
+                else if (vertex.pos.y < 2.0f)
+                {
+                    vertex.color = { 0.1f, 0.48f, 0.19f };
+                }
+                else if (vertex.pos.y < 2.5f)
+                {
+                    vertex.color = { 0.45f, 0.39f, 0.34f };
+                }
+                else
+                {
+                    vertex.color = { 1.0f, 1.0f, 1.0f };
+                }
             }
         }
 
@@ -114,7 +124,7 @@ void LandAndWavesDemo::initialize()
         GeometryUtil::calculateVertexIndexCountsSquare(VERTICES_PER_SIDE, m_wavesVertexCount, m_wavesIndexCount);
 
         std::unique_ptr<uint16_t[]> pIndices = std::make_unique<uint16_t[]>(m_wavesIndexCount);
-        GeometryUtil::createSquare(width, VERTICES_PER_SIDE, m_wavesVertices, pIndices.get());
+        GeometryUtil::createSquare(width, VERTICES_PER_SIDE, m_wavesVertices, pIndices.get(), vertexDesc);
 
         D3D12Util::createAndUploadBuffer(pIndices.get(), m_wavesIndexCount * sizeof(uint16_t), m_pCommandList.Get(), &m_pWavesIndexBuffer, &m_pWavesIndexBufferUpload);
     }
@@ -218,28 +228,18 @@ void LandAndWavesDemo::initialize()
         vertexInputElementDesc.SemanticIndex = 0u;
         vertexInputElementDesc.SemanticName = "POSITION";
 
-        D3D12_INPUT_ELEMENT_DESC texCoordInputElementDesc = {};
-        texCoordInputElementDesc.AlignedByteOffset = 12u;
-        texCoordInputElementDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
-        texCoordInputElementDesc.InputSlot = 0u;
-        texCoordInputElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-        texCoordInputElementDesc.InstanceDataStepRate = 0u;
-        texCoordInputElementDesc.SemanticIndex = 0u;
-        texCoordInputElementDesc.SemanticName = "TEXCOORD";
-
-        D3D12_INPUT_ELEMENT_DESC normalInputElementDesc = {};
-        normalInputElementDesc.AlignedByteOffset = 20u;
-        normalInputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-        normalInputElementDesc.InputSlot = 0u;
-        normalInputElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-        normalInputElementDesc.InstanceDataStepRate = 0u;
-        normalInputElementDesc.SemanticIndex = 0u;
-        normalInputElementDesc.SemanticName = "NORMAL";
+        D3D12_INPUT_ELEMENT_DESC colorInputElementDesc = {};
+        colorInputElementDesc.AlignedByteOffset = 12u;
+        colorInputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+        colorInputElementDesc.InputSlot = 0u;
+        colorInputElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        colorInputElementDesc.InstanceDataStepRate = 0u;
+        colorInputElementDesc.SemanticIndex = 0u;
+        colorInputElementDesc.SemanticName = "COLOR";
 
         D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
             vertexInputElementDesc,
-            texCoordInputElementDesc,
-            normalInputElementDesc,
+            colorInputElementDesc,
         };
 
         desc.InputLayout.NumElements = sizeof(inputElementDescs)/sizeof(D3D12_INPUT_ELEMENT_DESC);
@@ -326,11 +326,11 @@ void LandAndWavesDemo::update(float dt)
                     iterationCoordScaleY = 4.25f * std::fmodf(iterationCoordScaleY * 123.0f, 43.0f);
                 }
                 m_wavesVertices[y][x].pos.y = scale*offset;
-                //m_wavesVertices[y][x].normal = {
-                //    0.2f + 0.01f * offset,
-                //    0.3f + 0.015f * offset,
-                //    0.6f + 0.03f * offset
-                //};
+                m_wavesVertices[y][x].color = {
+                    0.2f + 0.01f * offset,
+                    0.3f + 0.015f * offset,
+                    0.6f + 0.03f * offset
+                };
             }
         }
         curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, m_wavesVertexCount * sizeof(Vertex));

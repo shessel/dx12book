@@ -24,6 +24,17 @@ void ShapesDemo::initialize()
     m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
     {
+
+        static constexpr GeometryUtil::VertexAttributeDesc attributeCollection[] =
+        {
+            {GeometryUtil::POSITION, 0u},
+            {GeometryUtil::NORMAL, 12u},
+        };
+
+        static constexpr GeometryUtil::VertexDesc vertexDesc = {
+            sizeof(attributeCollection) / sizeof(GeometryUtil::VertexAttributeDesc), attributeCollection, 24u
+        };
+
         m_pMesh = std::make_unique<Mesh>();
         {
             struct Vertex {
@@ -100,7 +111,7 @@ void ShapesDemo::initialize()
                 size_t startIndex = indices.size();
                 vertices.resize(vertices.size() + vertexCountSquare);
                 indices.resize(indices.size() + indexCountSquare);
-                GeometryUtil::createSquare(10.0f, 15, vertices.data() + startVertex, indices.data() + startIndex);
+                GeometryUtil::createSquare(10.0f, 15, vertices.data() + startVertex, indices.data() + startIndex, vertexDesc);
 
                 {
                     Renderable renderable;
@@ -152,7 +163,7 @@ void ShapesDemo::initialize()
                 size_t startIndex = indices.size();
                 vertices.resize(vertices.size() + vertexCountGeoSphere);
                 indices.resize(indices.size() + indexCountGeoSphere);
-                GeometryUtil::createGeoSphere(1.0f, i, vertices.data() + startVertex, indices.data() + startIndex);
+                GeometryUtil::createGeoSphere(1.0f, i, vertices.data() + startVertex, indices.data() + startIndex, vertexDesc);
 
                 {
                     Renderable renderable;

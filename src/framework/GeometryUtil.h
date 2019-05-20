@@ -11,6 +11,7 @@ namespace GeometryUtil
         NORMAL,
         TANGENT_U,
         TANGENT_V,
+        UNINITIALIZED, // ignored during geometry generation, use to leave space for custom attribs
     };
 
     struct VertexAttributeDesc
@@ -26,19 +27,19 @@ namespace GeometryUtil
         size_t stride;
     };
 
-    constexpr VertexAttributeDesc defaultAlltributeCollection[] =
+    constexpr VertexAttributeDesc defaultAttributeCollection[] =
     {
         {POSITION, 0u},
-        {NORMAL, 20u},
         {UV, 12u},
+        {NORMAL, 20u},
     };
 
     constexpr VertexDesc defaultVertexDesc = {
-        sizeof(defaultAlltributeCollection) / sizeof(VertexAttributeDesc), defaultAlltributeCollection, 32u
+        sizeof(defaultAttributeCollection) / sizeof(VertexAttributeDesc), defaultAttributeCollection, 32u
     };
 
     void calculateVertexIndexCountsGeoSphere(uint8_t suddivisions, size_t& vertexCount, size_t& indexCount);
-    void createGeoSphere(const float radius, const uint8_t subdivisions, void* const vertices, void* const indices);
+    void createGeoSphere(const float radius, const uint8_t subdivisions, void* const vertices, void* const indices, const VertexDesc& = defaultVertexDesc);
     void calculateVertexIndexCountsSquare(uint16_t vertexCountPerSide, size_t& vertexCount, size_t& indexCount);
-    void createSquare(const float width, const uint16_t vertexCountPerSide, void* const vertices, void* const indices);
+    void createSquare(const float width, const uint16_t vertexCountPerSide, void* const vertices, void* const indices, const VertexDesc& = defaultVertexDesc);
 }
