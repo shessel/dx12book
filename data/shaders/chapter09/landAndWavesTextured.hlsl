@@ -13,6 +13,9 @@ struct MaterialData
     float4 albedoColor;
     float3 fresnelR0;
     float roughness;
+    float2 texCoordTransform0;
+    float2 texCoordTransform1;
+    float2 texCoordOffset;
 };
 
 static const uint MAX_LIGHT_COUNT = 16;
@@ -34,6 +37,9 @@ struct PassData
 struct ObjectData
 {
     float4x4 model;
+    float2 texCoordTransform0;
+    float2 texCoordTransform1;
+    float2 texCoordOffset;
 };
 
 ConstantBuffer<MaterialData> g_cbMaterial : register(b0);
@@ -79,7 +85,11 @@ VertexOutput vs(VertexInput vIn)
 
     // works because in this demo model is just rotation -> orthogonal -> (M^-1)T == M
     vOut.normalW = mul((float3x3)g_cbObject.model, vIn.normal);
-    vOut.uv = vIn.uv;
+
+    float2x2 mat = float2x2(g_cbObject.texCoordTransform0, g_cbObject.texCoordTransform1);
+    vOut.uv = mul(mat, vIn.uv) + g_cbObject.texCoordOffset;
+    mat = float2x2(g_cbMaterial.texCoordTransform0, g_cbMaterial.texCoordTransform1);
+    vOut.uv = mul(mat, vOut.uv) + g_cbMaterial.texCoordOffset;
 
     return vOut;
 }

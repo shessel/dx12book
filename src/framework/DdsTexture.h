@@ -14,6 +14,8 @@ struct DdsTexture
 
     Microsoft::WRL::ComPtr<ID3D12Resource> m_pResource;
     Microsoft::WRL::ComPtr<ID3D12Resource> m_pUploadResource;
+    
+    size_t m_srvHeapIndex;
 
     void createFromFileAndUpload(ID3D12GraphicsCommandList* const commandList, const wchar_t* const filename);
 };

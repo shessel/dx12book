@@ -63,6 +63,9 @@ private:
     struct ObjectConstants
     {
         DirectX::XMFLOAT4X4 world;
+        DirectX::XMFLOAT2 texCoordTransformColumn0;
+        DirectX::XMFLOAT2 texCoordTransformColumn1;
+        DirectX::XMFLOAT2 texCoordOffset;
     };
 
     struct MaterialConstants
@@ -70,6 +73,9 @@ private:
         DirectX::XMFLOAT4 albedoColor;
         DirectX::XMFLOAT3 fresnelR0;
         float roughness;
+        DirectX::XMFLOAT2 texCoordTransformColumn0;
+        DirectX::XMFLOAT2 texCoordTransformColumn1;
+        DirectX::XMFLOAT2 texCoordOffset;
     };
 
     struct Vertex
@@ -98,10 +104,9 @@ private:
     std::vector<Renderable> m_renderables;
     std::vector<Material> m_materials;
     std::vector<Mesh> m_meshes;
+    std::vector<DdsTexture> m_textures;
 
-    DdsTexture m_texture;
-
-    size_t m_wavesMeshIndex;
+    size_t m_waveRenderableIndex;
     Vertex m_wavesVertices[VERTICES_PER_SIDE][VERTICES_PER_SIDE];
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineState;

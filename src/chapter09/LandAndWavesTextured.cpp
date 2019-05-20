@@ -65,30 +65,6 @@ void LandAndWavesTextured::initialize()
 
     ThrowIfFailed(m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFrameFence)));
 
-    m_texture.createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/square_parquet-diffuse.dds");
-
-    {
-        D3D12_DESCRIPTOR_HEAP_DESC  desc = {};
-        desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-        desc.NumDescriptors = 1;
-        desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        ThrowIfFailed(m_pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_pSrvHeap)));
-    }
-
-    {
-        D3D12_RESOURCE_DESC resourceDesc = m_texture.m_pResource->GetDesc();
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-        desc.Format = resourceDesc.Format;
-        desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        desc.Texture2D.MipLevels = resourceDesc.MipLevels;
-        desc.Texture2D.MostDetailedMip = 0;
-        desc.Texture2D.PlaneSlice = 0;
-        desc.Texture2D.ResourceMinLODClamp = 0.0f;
-
-        m_pDevice->CreateShaderResourceView(m_texture.m_pResource.Get(), &desc, m_pSrvHeap->GetCPUDescriptorHandleForHeapStart());
-    }
-
     size_t landVertexCount;
     {
         size_t landIndexCount;
@@ -126,12 +102,19 @@ void LandAndWavesTextured::initialize()
         m_meshes.emplace_back(landMesh);
 
         // not thread safe
+        size_t textureIndex = m_textures.size();
+        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/brown_mud_leaves_01_diff_1k.dds");
+
+        // not thread safe
         Material landMaterial;
         size_t materialIndex = m_materials.size();
         landMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
         landMaterial.m_cbIndex = 0u;
-        landMaterial.m_albedoColor = { 0.2f, 0.6f, 0.2f, 1.0f };
+        landMaterial.m_albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
         landMaterial.m_roughness = 0.9f;
+        landMaterial.texCoordTransformColumn0 = { 10.0f, 0.0f };
+        landMaterial.texCoordTransformColumn1 = { 0.0f, 10.0f };
+        landMaterial.m_diffuseTextureIndex = textureIndex;
         m_materials.emplace_back(landMaterial);
 
         Renderable landRenderable;
@@ -159,10 +142,13 @@ void LandAndWavesTextured::initialize()
         wavesMesh.m_indexSize = sizeof(uint16_t);
         wavesMesh.m_vertexCount = wavesVertexCount;
         wavesMesh.m_vertexSize[0] = sizeof(Vertex);
-        m_wavesMeshIndex = meshIndex;
 
         D3D12Util::createAndUploadBuffer(pIndices.get(), wavesMesh.m_indexCount * wavesMesh.m_indexSize, m_pCommandList.Get(), &wavesMesh.m_pIndexBuffer, &wavesMesh.m_pIndexBufferUpload);
         m_meshes.emplace_back(wavesMesh);
+
+        // not thread safe
+        size_t textureIndex = m_textures.size();
+        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/Water_001_COLOR.dds");
 
         // not thread safe
         size_t materialIndex = m_materials.size();
@@ -170,10 +156,14 @@ void LandAndWavesTextured::initialize()
         waterMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
         waterMaterial.m_cbIndex = 1u;
         waterMaterial.m_fresnelR0 = { 0.1f, 0.1f, 0.1f };
-        waterMaterial.m_albedoColor = { 0.0f, 0.2f, 0.6f, 1.0f };
+        waterMaterial.m_albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
         waterMaterial.m_roughness = 0.0f;
+        waterMaterial.texCoordTransformColumn0 = { 20.0f, 0.0f };
+        waterMaterial.texCoordTransformColumn1 = { 0.0f, 20.0f };
+        waterMaterial.m_diffuseTextureIndex = textureIndex;
         m_materials.emplace_back(waterMaterial);
         
+        m_waveRenderableIndex = m_renderables.size();
         Renderable wavesRenderable;
         wavesRenderable.m_model._42 = -0.25f;
         wavesRenderable.m_meshIndex = meshIndex;
@@ -183,6 +173,34 @@ void LandAndWavesTextured::initialize()
         wavesRenderable.m_baseVertex = 0;
         wavesRenderable.m_indexCount = static_cast<UINT>(wavesIndexCount);
         m_renderables.emplace_back(wavesRenderable);
+    }
+
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC  desc = {};
+        desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        desc.NumDescriptors = static_cast<UINT>(m_textures.size());
+        desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        ThrowIfFailed(m_pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_pSrvHeap)));
+    }
+
+    for (size_t srvIndex = 0; srvIndex < m_textures.size(); ++srvIndex)
+    {
+        D3D12_RESOURCE_DESC resourceDesc = m_textures[srvIndex].m_pResource->GetDesc();
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+        desc.Format = resourceDesc.Format;
+        desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        desc.Texture2D.MipLevels = resourceDesc.MipLevels;
+        desc.Texture2D.MostDetailedMip = 0;
+        desc.Texture2D.PlaneSlice = 0;
+        desc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+        auto cpuHandle = m_pSrvHeap->GetCPUDescriptorHandleForHeapStart();
+        cpuHandle.ptr += srvIndex * m_cbvSrvUavDescriptorSize;
+
+        m_pDevice->CreateShaderResourceView(m_textures[srvIndex].m_pResource.Get(), &desc, cpuHandle);
+
+        m_textures[srvIndex].m_srvHeapIndex = srvIndex;
     }
 
     for (FrameResources& frameResources : m_frameResources)
@@ -372,6 +390,75 @@ void LandAndWavesTextured::update(float dt)
     }
 
     {
+        constexpr float scale = 0.005f;
+        for (uint16_t y = 0; y < VERTICES_PER_SIDE; ++y)
+        {
+            for (uint16_t x = 0; x < VERTICES_PER_SIDE; ++x)
+            {
+                float offset = 0.0f;
+                float iterationScale = 1.0f;
+                float iterationCoordOffsetX = 0.0f;
+                float iterationCoordOffsetY = 0.0f;
+                float iterationCoordScaleX = 5.0f;
+                float iterationCoordScaleY = 7.0f;
+                for (uint8_t iteration = 0; iteration < 3; ++iteration)
+                {
+                    const float iterationX = iterationCoordScaleX * (x + iterationCoordOffsetX);
+                    const float iterationY = iterationCoordScaleY * (y + iterationCoordOffsetY);
+                    offset += iterationScale * DirectX::XMScalarSinEst(m_timer.getElapsedTime() + iterationX + iterationY);
+                    iterationScale *= 0.65f;
+                    iterationCoordOffsetX += 0.23f;
+                    iterationCoordOffsetX = std::fmodf(iterationCoordScaleX, 1.0f);
+                    iterationCoordOffsetY += 0.57f;
+                    iterationCoordOffsetY = std::fmodf(iterationCoordScaleY, 1.0f);
+
+                    iterationCoordScaleX = 4.25f * std::fmodf(iterationCoordScaleX * 123.0f, 23.0f);
+                    iterationCoordScaleY = 4.25f * std::fmodf(iterationCoordScaleY * 123.0f, 43.0f);
+                }
+                m_wavesVertices[y][x].pos.y = scale * offset;
+
+                const uint16_t xPos = x < VERTICES_PER_SIDE - 1 ? x + 1 : x;
+                const uint16_t xNeg = x > 0 ? x - 1 : x;
+                float xStep = m_gridWidth / VERTICES_PER_SIDE;
+                if (x <= 0 || x >= VERTICES_PER_SIDE - 1)
+                {
+                    xStep *= 0.5f;
+                }
+
+                const uint16_t yPos = y < VERTICES_PER_SIDE - 1 ? y + 1 : y;
+                const uint16_t yNeg = y > 0 ? y - 1 : y;
+                float yStep = m_gridWidth / VERTICES_PER_SIDE;
+                if (y <= 0 || y >= VERTICES_PER_SIDE - 1)
+                {
+                    yStep *= 0.5f;
+                }
+
+                DirectX::XMVECTOR normal = {
+                    (m_wavesVertices[y][xPos].pos.y - m_wavesVertices[y][xNeg].pos.y) / xStep,
+                    1.0f,
+                    (m_wavesVertices[yPos][x].pos.y - m_wavesVertices[yNeg][x].pos.y) / yStep,
+                };
+                DirectX::XMStoreFloat3(&m_wavesVertices[y][x].normal, DirectX::XMVector3Normalize(normal));
+            }
+        }
+
+        const auto& waveRenderable = m_renderables[m_waveRenderableIndex];
+        auto& waveMesh = m_meshes[waveRenderable.m_meshIndex];
+        curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, waveMesh.m_vertexCount * waveMesh.m_vertexSize[0]);
+        waveMesh.m_pVertexBuffer[0] = curFrameResources.m_pDynamicVertices->getResourceComPtr();
+        auto& waveMaterial = m_materials[waveRenderable.m_materialIndex];
+        waveMaterial.texCoordOffset.x += dt * 0.02f;
+        if (waveMaterial.texCoordOffset.x >= 1.0f) {
+            waveMaterial.texCoordOffset.x -= 1.0f;
+        }
+        waveMaterial.texCoordOffset.y += dt * 0.05f;
+        if (waveMaterial.texCoordOffset.y >= 1.0f) {
+            waveMaterial.texCoordOffset.y -= 1.0f;
+        }
+        waveMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
+    }
+
+    {
         PassConstants passConstants = {};
         passConstants.view = m_camera.m_matrix;
         DirectX::XMStoreFloat4x4(&passConstants.projection, DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(60.0f), static_cast<float>(m_windowWidth) / m_windowHeight, 0.1f, 100.0f));
@@ -405,6 +492,9 @@ void LandAndWavesTextured::update(float dt)
     {
         ObjectConstants objectConstants{};
         objectConstants.world = renderable.m_model;
+        objectConstants.texCoordTransformColumn0 = { 1.0f, 0.0f };
+        objectConstants.texCoordTransformColumn1 = { 0.0f, 1.0f };
+        objectConstants.texCoordOffset = { 0.0f, 0.0f };
         curFrameResources.m_pCbObjects->copyData(&objectConstants, sizeof(ObjectConstants), renderable.m_cbIndex * curFrameResources.m_pCbObjects->getElementSize());
     }
 
@@ -416,67 +506,14 @@ void LandAndWavesTextured::update(float dt)
             materialConstants.albedoColor = material.m_albedoColor;
             materialConstants.fresnelR0 = material.m_fresnelR0;
             materialConstants.roughness = material.m_roughness;
+            materialConstants.texCoordTransformColumn0 = material.texCoordTransformColumn0;
+            materialConstants.texCoordTransformColumn1 = material.texCoordTransformColumn1;
+            materialConstants.texCoordOffset = material.texCoordOffset;
 
             curFrameResources.m_pCbMaterials->copyData(&materialConstants, sizeof(MaterialConstants), material.m_cbIndex * curFrameResources.m_pCbMaterials->getElementSize());
 
             --material.m_framesDirtyCount;
         }
-    }
-
-    {
-        constexpr float scale = 0.005f;
-        for (uint16_t y = 0; y < VERTICES_PER_SIDE; ++y)
-        {
-            for (uint16_t x = 0; x < VERTICES_PER_SIDE; ++x)
-            {
-                float offset = 0.0f;
-                float iterationScale = 1.0f;
-                float iterationCoordOffsetX = 0.0f;
-                float iterationCoordOffsetY = 0.0f;
-                float iterationCoordScaleX = 5.0f;
-                float iterationCoordScaleY = 7.0f;
-                for (uint8_t iteration = 0; iteration < 3; ++iteration)
-                {
-                    const float iterationX = iterationCoordScaleX * (x + iterationCoordOffsetX);
-                    const float iterationY = iterationCoordScaleY * (y + iterationCoordOffsetY);
-                    offset += iterationScale * DirectX::XMScalarSinEst(m_timer.getElapsedTime() + iterationX + iterationY);
-                    iterationScale *= 0.65f;
-                    iterationCoordOffsetX += 0.23f;
-                    iterationCoordOffsetX = std::fmodf(iterationCoordScaleX, 1.0f);
-                    iterationCoordOffsetY += 0.57f;
-                    iterationCoordOffsetY = std::fmodf(iterationCoordScaleY, 1.0f);
-
-                    iterationCoordScaleX = 4.25f * std::fmodf(iterationCoordScaleX * 123.0f, 23.0f);
-                    iterationCoordScaleY = 4.25f * std::fmodf(iterationCoordScaleY * 123.0f, 43.0f);
-                }
-                m_wavesVertices[y][x].pos.y = scale*offset;
-
-                const uint16_t xPos = x < VERTICES_PER_SIDE - 1 ? x + 1 : x;
-                const uint16_t xNeg = x > 0 ? x - 1 : x;
-                float xStep = m_gridWidth / VERTICES_PER_SIDE;
-                if (x <= 0 || x >= VERTICES_PER_SIDE - 1)
-                {
-                    xStep *= 0.5f;
-                }
-
-                const uint16_t yPos = y < VERTICES_PER_SIDE - 1 ? y + 1 : y;
-                const uint16_t yNeg = y > 0 ? y - 1 : y;
-                float yStep = m_gridWidth / VERTICES_PER_SIDE;
-                if (y <= 0 || y >= VERTICES_PER_SIDE - 1)
-                {
-                    yStep *= 0.5f;
-                }
-                    
-                DirectX::XMVECTOR normal = {
-                    (m_wavesVertices[y][xPos].pos.y - m_wavesVertices[y][xNeg].pos.y) / xStep,
-                    1.0f,
-                    (m_wavesVertices[yPos][x].pos.y - m_wavesVertices[yNeg][x].pos.y) / yStep,
-                };
-                DirectX::XMStoreFloat3(&m_wavesVertices[y][x].normal, DirectX::XMVector3Normalize(normal));
-            }
-        }
-        curFrameResources.m_pDynamicVertices->copyData(m_wavesVertices, m_meshes[m_wavesMeshIndex].m_vertexCount * m_meshes[m_wavesMeshIndex].m_vertexSize[0]);
-        m_meshes[m_wavesMeshIndex].m_pVertexBuffer[0] = curFrameResources.m_pDynamicVertices->getResourceComPtr();
     }
 };
 
@@ -502,7 +539,6 @@ void LandAndWavesTextured::render()
     m_pCommandList->SetGraphicsRootConstantBufferView(2, curFrameResources.m_pCbPass->getResource()->GetGPUVirtualAddress());
     ID3D12DescriptorHeap* const heaps[] = { m_pSrvHeap.Get() };
     m_pCommandList->SetDescriptorHeaps(1u, heaps);
-    m_pCommandList->SetGraphicsRootDescriptorTable(3, m_pSrvHeap->GetGPUDescriptorHandleForHeapStart());
 
     {
         D3D12_VIEWPORT viewport = {};
@@ -533,6 +569,10 @@ void LandAndWavesTextured::render()
         D3D12_GPU_VIRTUAL_ADDRESS objectCbGpuAddress = curFrameResources.m_pCbObjects->getResource()->GetGPUVirtualAddress();
         objectCbGpuAddress += renderable.m_cbIndex * curFrameResources.m_pCbObjects->getElementSize();
         m_pCommandList->SetGraphicsRootConstantBufferView(1, objectCbGpuAddress);
+
+        D3D12_GPU_DESCRIPTOR_HANDLE textureSrvGpuHandle = m_pSrvHeap->GetGPUDescriptorHandleForHeapStart();
+        textureSrvGpuHandle.ptr += m_textures[m_materials[renderable.m_materialIndex].m_diffuseTextureIndex].m_srvHeapIndex * m_cbvSrvUavDescriptorSize;
+        m_pCommandList->SetGraphicsRootDescriptorTable(3, textureSrvGpuHandle);
 
         const D3D12_INDEX_BUFFER_VIEW indexBufferView = m_meshes[renderable.m_meshIndex].getIndexBufferView();
         m_pCommandList->IASetIndexBuffer(&indexBufferView);
