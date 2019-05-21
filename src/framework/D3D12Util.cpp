@@ -68,7 +68,7 @@ namespace D3D12Util
         memcpy(pMappedBufferOffset, data, dataSize);
     }
 
-    Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target)
+    Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target, const D3D_SHADER_MACRO* const pDefines)
     {
         UINT shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #if defined(DEBUG) || defined (_DEBUG)
@@ -76,7 +76,7 @@ namespace D3D12Util
 #endif
         UINT effectFlags = 0;
         Microsoft::WRL::ComPtr<ID3DBlob> pCode, pError;
-        HRESULT hr = D3DCompileFromFile(fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, target, shaderFlags, effectFlags, pCode.GetAddressOf(), pError.GetAddressOf());
+        HRESULT hr = D3DCompileFromFile(fileName, pDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, target, shaderFlags, effectFlags, pCode.GetAddressOf(), pError.GetAddressOf());
 
         if (FAILED(hr))
         {

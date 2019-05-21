@@ -25,7 +25,8 @@ namespace D3D12Util
             };
         };
 
-        MappedGPUBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize, const uint8_t flags = Flags::None);
+        MappedGPUBuffer(ID3D12Device* const device, const size_t elementCount, const size_t elementSize,
+            const uint8_t flags = Flags::None);
         ~MappedGPUBuffer();
 
         MappedGPUBuffer(const MappedGPUBuffer& other) = delete;
@@ -43,6 +44,9 @@ namespace D3D12Util
         void *m_pMappedBuffer = nullptr;
     };
 
-    Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const wchar_t* const fileName, const char* const entryPoint, const char* const target);
-    void createAndUploadBuffer(const void* const data, const size_t dataSize, ID3D12GraphicsCommandList* const commandList, ID3D12Resource** buffer, ID3D12Resource** uploadBuffer);
+    Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const wchar_t* const fileName, const char* const entryPoint,
+        const char* const target, const D3D_SHADER_MACRO* const pDefines = nullptr);
+
+    void createAndUploadBuffer(const void* const data, const size_t dataSize,
+        ID3D12GraphicsCommandList* const commandList, ID3D12Resource** buffer, ID3D12Resource** uploadBuffer);
 }
