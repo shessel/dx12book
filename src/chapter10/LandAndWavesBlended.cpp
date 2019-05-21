@@ -70,15 +70,15 @@ void LandAndWavesBlended::initialize()
         size_t landIndexCount;
         GeometryUtil::calculateVertexIndexCountsSquare(VERTICES_PER_SIDE, landVertexCount, landIndexCount);
 
-        std::unique_ptr<Vertex[]> p_landVertices = std::make_unique<Vertex[]>(landVertexCount);
-        std::unique_ptr<uint16_t[]> p_landIndices = std::make_unique<uint16_t[]>(landIndexCount);
-        GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, p_landVertices.get(), p_landIndices.get());
+        std::unique_ptr<Vertex[]> pLandVertices = std::make_unique<Vertex[]>(landVertexCount);
+        std::unique_ptr<uint16_t[]> pLandIndices = std::make_unique<uint16_t[]>(landIndexCount);
+        GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, pLandVertices.get(), pLandIndices.get());
 
         for (uint16_t y = 0; y < VERTICES_PER_SIDE; ++y)
         {
             for (uint16_t x = 0; x < VERTICES_PER_SIDE; ++x)
             {
-                Vertex& vertex = p_landVertices[y * VERTICES_PER_SIDE + x];
+                Vertex& vertex = pLandVertices[y * VERTICES_PER_SIDE + x];
                 float sinX = DirectX::XMScalarSinEst(vertex.pos.x * 16.0f / (m_gridWidth));
                 float cosZ = DirectX::XMScalarCosEst(vertex.pos.z * 16.0f / (m_gridWidth));
                 vertex.pos.y = (6.0f*(vertex.pos.z* sinX + vertex.pos.x*cosZ) + 0.5f) / m_gridWidth;
@@ -97,8 +97,8 @@ void LandAndWavesBlended::initialize()
         // not thread safe
         size_t meshIndex = m_meshes.size();
         Mesh landMesh;
-        landMesh.createVertexBuffer(p_landVertices.get(), landVertexCount, sizeof(Vertex), m_pCommandList.Get());
-        landMesh.createIndexBuffer(p_landIndices.get(), landIndexCount, sizeof(uint16_t), m_pCommandList.Get());
+        landMesh.createVertexBuffer(pLandVertices.get(), landVertexCount, sizeof(Vertex), m_pCommandList.Get());
+        landMesh.createIndexBuffer(pLandIndices.get(), landIndexCount, sizeof(uint16_t), m_pCommandList.Get());
         m_meshes.emplace_back(landMesh);
 
         // not thread safe
@@ -176,6 +176,50 @@ void LandAndWavesBlended::initialize()
     }
 
     {
+        size_t sphereVertexCount;
+        size_t sphereIndexCount;
+        const uint8_t sphereSubdivisions = 3u;
+        GeometryUtil::calculateVertexIndexCountsGeoSphere(sphereSubdivisions, sphereVertexCount, sphereIndexCount);
+
+        std::unique_ptr<uint16_t[]> pIndices = std::make_unique<uint16_t[]>(sphereIndexCount);
+        std::unique_ptr<Vertex[]> pVertices = std::make_unique<Vertex[]>(sphereVertexCount);
+        GeometryUtil::createGeoSphere(2.0f, sphereSubdivisions, pVertices.get(), pIndices.get());
+
+        // not thread safe
+        size_t meshIndex = m_meshes.size();
+        Mesh sphereMesh;
+        sphereMesh.createVertexBuffer(pVertices.get(), sphereVertexCount, sizeof(Vertex), m_pCommandList.Get());
+        sphereMesh.createIndexBuffer(pIndices.get(), sphereIndexCount, sizeof(uint16_t), m_pCommandList.Get());
+        m_meshes.emplace_back(sphereMesh);
+
+        // not thread safe
+        size_t textureIndex = m_textures.size();
+        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/MetalWalkway04_col_bc3.dds");
+
+        // not thread safe
+        size_t materialIndex = m_materials.size();
+        Material metalGridMaterial;
+        metalGridMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
+        metalGridMaterial.m_cbIndex = 2u;
+        metalGridMaterial.m_fresnelR0 = { 0.1f, 0.1f, 0.1f };
+        metalGridMaterial.m_albedoColor = { 1.0f, 1.0f, 1.0f, 0.5f };
+        metalGridMaterial.m_roughness = 0.0f;
+        metalGridMaterial.texCoordTransformColumn0 = { 3.0f, 0.0f };
+        metalGridMaterial.texCoordTransformColumn1 = { 0.0f, 3.0f };
+        metalGridMaterial.m_diffuseTextureIndex = textureIndex;
+        m_materials.emplace_back(metalGridMaterial);
+
+        Renderable metalGridSphereRenderable;
+        metalGridSphereRenderable.m_meshIndex = meshIndex;
+        metalGridSphereRenderable.m_materialIndex = materialIndex;
+        metalGridSphereRenderable.m_cbIndex = 2;
+        metalGridSphereRenderable.m_startIndex = 0;
+        metalGridSphereRenderable.m_baseVertex = 0;
+        metalGridSphereRenderable.m_indexCount = static_cast<UINT>(sphereIndexCount);
+        m_alphaClippedRenderables.emplace_back(metalGridSphereRenderable);
+    }
+
+    {
         D3D12_DESCRIPTOR_HEAP_DESC  desc = {};
         desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         desc.NumDescriptors = static_cast<UINT>(m_textures.size());
@@ -205,7 +249,7 @@ void LandAndWavesBlended::initialize()
 
     for (FrameResources& frameResources : m_frameResources)
     {
-        size_t totalRenderableCount = m_opaqueRenderables.size() + m_transparentRenderables.size();
+        size_t totalRenderableCount = m_opaqueRenderables.size() + m_transparentRenderables.size() + m_alphaClippedRenderables.size();
         ThrowIfFailed(m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frameResources.m_pCommandAllocator)));
         frameResources.m_pCbPass = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), 1, sizeof(PassConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
         frameResources.m_pCbObjects = std::make_unique<D3D12Util::MappedGPUBuffer>(m_pDevice.Get(), totalRenderableCount, sizeof(ObjectConstants), D3D12Util::MappedGPUBuffer::Flags::ConstantBuffer);
@@ -357,27 +401,62 @@ void LandAndWavesBlended::initialize()
 
         desc.pRootSignature = m_pRootSignature.Get();
 
-        Microsoft::WRL::ComPtr<ID3DBlob> pVertexShader = D3D12Util::compileShader(L"data/shaders/chapter10/landAndWavesBlended.hlsl", "vs", "vs_5_1");
-        desc.VS.pShaderBytecode = pVertexShader->GetBufferPointer();
-        desc.VS.BytecodeLength = pVertexShader->GetBufferSize();
+        {
+            std::vector<D3D_SHADER_MACRO> defines;
+            if (m_useFog) {
+                defines.emplace_back(D3D_SHADER_MACRO{"USE_FOG", ""});
+            }
+            defines.emplace_back(D3D_SHADER_MACRO{ nullptr, nullptr });
 
-        Microsoft::WRL::ComPtr<ID3DBlob> pPixelShader = D3D12Util::compileShader(L"data/shaders/chapter10/landAndWavesBlended.hlsl", "ps", "ps_5_1");
-        desc.PS.pShaderBytecode = pPixelShader->GetBufferPointer();
-        desc.PS.BytecodeLength = pPixelShader->GetBufferSize();
+            Microsoft::WRL::ComPtr<ID3DBlob> pVertexShader = D3D12Util::compileShader(
+                L"data/shaders/chapter10/landAndWavesBlended.hlsl", "vs", "vs_5_1", defines.data());
+            desc.VS.pShaderBytecode = pVertexShader->GetBufferPointer();
+            desc.VS.BytecodeLength = pVertexShader->GetBufferSize();
 
-        ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineStateOpaque)));
+            Microsoft::WRL::ComPtr<ID3DBlob> pPixelShader = D3D12Util::compileShader(
+                L"data/shaders/chapter10/landAndWavesBlended.hlsl", "ps", "ps_5_1", defines.data());
+            desc.PS.pShaderBytecode = pPixelShader->GetBufferPointer();
+            desc.PS.BytecodeLength = pPixelShader->GetBufferSize();
 
-        desc.BlendState.RenderTarget[0].BlendEnable = true;
-        desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-        desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-        desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-        desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-        desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-        desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+            ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineStateOpaque)));
 
-        desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-        
-        ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineStateAlphaBlend)));
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaBlendDesc = desc;
+            alphaBlendDesc.BlendState.RenderTarget[0].BlendEnable = true;
+            alphaBlendDesc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+            alphaBlendDesc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+            alphaBlendDesc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+            alphaBlendDesc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+            alphaBlendDesc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+            alphaBlendDesc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+
+            alphaBlendDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+
+            ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&alphaBlendDesc, IID_PPV_ARGS(&m_pPipelineStateAlphaBlend)));
+        }
+
+        {
+            std::vector<D3D_SHADER_MACRO> defines;
+            if (m_useFog) {
+                defines.emplace_back(D3D_SHADER_MACRO{"USE_FOG", ""});
+            }
+            defines.emplace_back(D3D_SHADER_MACRO{"USE_ALPHA_CLIP", ""});
+            defines.emplace_back(D3D_SHADER_MACRO{nullptr, nullptr});
+
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaClipDesc = desc;
+            alphaClipDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+
+            Microsoft::WRL::ComPtr<ID3DBlob> pVertexShader = D3D12Util::compileShader(
+                L"data/shaders/chapter10/landAndWavesBlended.hlsl", "vs", "vs_5_1", defines.data());
+            alphaClipDesc.VS.pShaderBytecode = pVertexShader->GetBufferPointer();
+            alphaClipDesc.VS.BytecodeLength = pVertexShader->GetBufferSize();
+
+            Microsoft::WRL::ComPtr<ID3DBlob> pPixelShader = D3D12Util::compileShader(
+                L"data/shaders/chapter10/landAndWavesBlended.hlsl", "ps", "ps_5_1", defines.data());
+            alphaClipDesc.PS.pShaderBytecode = pPixelShader->GetBufferPointer();
+            alphaClipDesc.PS.BytecodeLength = pPixelShader->GetBufferSize();
+
+            ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&alphaClipDesc, IID_PPV_ARGS(&m_pPipelineStateAlphaClipped)));
+        }
     }
 
     ThrowIfFailed(m_pCommandList->Close());
@@ -479,6 +558,7 @@ void LandAndWavesBlended::update(float dt)
         passConstants.dTime = dt;
         passConstants.ambientLight = { 0.05f, 0.05f, 0.05f };
         passConstants.cameraPositionW = m_camera.m_position;
+        passConstants.alphaClipThreshold = 0.02f;
 
         passConstants.lightData[0].color = { 1.0f, 1.0f, 1.0f };
         passConstants.lightData[0].direction = { 2.0f, -5.0f, 3.0f };
@@ -497,6 +577,10 @@ void LandAndWavesBlended::update(float dt)
         passConstants.lightData[2].falloffEnd = 15.0f;
         passConstants.lightData[2].spotPower = 8.0f;
         passConstants.spotLightCount = 1u;
+
+        passConstants.fogColor = { m_clearColor[0], m_clearColor[1], m_clearColor[2] };
+        passConstants.fogBegin = 2.0f;
+        passConstants.fogEnd = 20.0f;
 
         curFrameResources.m_pCbPass->copyData(&passConstants, sizeof(PassConstants));
     }
@@ -517,6 +601,11 @@ void LandAndWavesBlended::update(float dt)
     }
 
     for (const auto& renderable : m_transparentRenderables)
+    {
+        updateObjectCbContents(renderable);
+    }
+
+    for (const auto& renderable : m_alphaClippedRenderables)
     {
         updateObjectCbContents(renderable);
     }
@@ -555,8 +644,7 @@ void LandAndWavesBlended::render()
     }
 
     m_pCommandList->ClearDepthStencilView(getCurrentDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    constexpr float clearColor[4] = { 0.2f, 0.4f, 0.6f, 1.0f };
-    m_pCommandList->ClearRenderTargetView(getCurrentBackBufferView(), clearColor, 0, nullptr);
+    m_pCommandList->ClearRenderTargetView(getCurrentBackBufferView(), m_clearColor, 0, nullptr);
 
     m_pCommandList->SetGraphicsRootSignature(m_pRootSignature.Get());
     m_pCommandList->SetGraphicsRootConstantBufferView(2, curFrameResources.m_pCbPass->getResource()->GetGPUVirtualAddress());
@@ -609,6 +697,12 @@ void LandAndWavesBlended::render()
     };
 
     for (const auto& renderable : m_opaqueRenderables)
+    {
+        renderRenderable(renderable);
+    }
+
+    m_pCommandList->SetPipelineState(m_pPipelineStateAlphaClipped.Get());
+    for (const auto& renderable : m_alphaClippedRenderables)
     {
         renderRenderable(renderable);
     }

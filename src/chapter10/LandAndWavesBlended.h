@@ -51,11 +51,17 @@ private:
         uint32_t directionalLightCount;
         uint32_t pointLightCount;
 
-        uint32_t spotLightCount;
         DirectX::XMFLOAT3 ambientLight;
+        uint32_t spotLightCount;
 
         DirectX::XMFLOAT3 cameraPositionW;
-        uint32_t padding;
+        float alphaClipThreshold;
+
+        DirectX::XMFLOAT3 fogColor;
+        float fogBegin;
+
+        float fogEnd;
+        float padding[3];
 
         LightData lightData[MAX_LIGHT_COUNT];
     };
@@ -97,12 +103,15 @@ private:
         std::unique_ptr<D3D12Util::MappedGPUBuffer> m_pDynamicVertices;
     };
 
+    static constexpr float m_clearColor[4] = { 0.4f, 0.45f, 0.4f, 1.0f };
+    static constexpr bool m_useFog = true;
     static constexpr size_t FRAME_RESOURCES_COUNT = 3u;
     static constexpr uint16_t VERTICES_PER_SIDE = 100u;
     size_t m_curFrameResourcesIndex = 0u;
     FrameResources m_frameResources[FRAME_RESOURCES_COUNT];
     std::vector<Renderable> m_opaqueRenderables;
     std::vector<Renderable> m_transparentRenderables;
+    std::vector<Renderable> m_alphaClippedRenderables;
     std::vector<Material> m_materials;
     std::vector<Mesh> m_meshes;
     std::vector<DdsTexture> m_textures;
@@ -112,6 +121,7 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineStateOpaque;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineStateAlphaBlend;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineStateAlphaClipped;
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 

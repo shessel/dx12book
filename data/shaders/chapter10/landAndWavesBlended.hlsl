@@ -24,13 +24,24 @@ struct PassData
 {
     float4x4 view;
     float4x4 projection;
+    
     float time;
     float dTime;
     uint directionalLightCount;
     uint pointLightCount;
-    uint spotLightCount;
+    
     float3 ambientLight;
+    uint spotLightCount;
+    
     float3 cameraPositionW;
+    float alphaClipThreshold;
+    
+    float3 fogColor;
+    float fogBegin;
+    
+    float fogEnd;
+    float3 padding;
+
     LightData lightData[MAX_LIGHT_COUNT];
 };
 
@@ -96,6 +107,21 @@ VertexOutput vs(VertexInput vIn)
 
 float4 ps(VertexOutput pIn) : SV_TARGET
 {
+    float4 albedoColorTex = g_tex.Sample(g_samplerLinearWrap, pIn.uv);
+#ifdef USE_ALPHA_CLIP
+    clip((g_cbMaterial.albedoColor.a * albedoColorTex.a) - g_cbPass.alphaClipThreshold);
+#endif
+
+    float3 toCamera = g_cbPass.cameraPositionW - pIn.positionW;
+    float distanceToCamera = length(toCamera);
+
     float3 normal = normalize(pIn.normalW);
-    return float4(computeLights(pIn.positionW, pIn.normalW), g_cbMaterial.albedoColor.a) * g_tex.Sample(g_samplerLinearWrap, pIn.uv);
+    float4 litColor = float4(computeLights(pIn.positionW, normal, toCamera/distanceToCamera), g_cbMaterial.albedoColor.a) * albedoColorTex;
+
+#ifdef USE_FOG
+    float fogFactor = saturate((distanceToCamera - g_cbPass.fogBegin) / (g_cbPass.fogEnd - g_cbPass.fogBegin));
+    litColor.rgb = lerp(litColor.rgb, g_cbPass.fogColor, fogFactor);
+#endif
+
+    return litColor;
 }
