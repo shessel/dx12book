@@ -76,5 +76,6 @@ VertexOutput vs(VertexInput vIn)
 float4 ps(VertexOutput pIn) : SV_TARGET
 {
     float3 normal = normalize(pIn.normalW);
-    return float4(computeLights(pIn.positionW, pIn.normalW), 1.0f);
+    float3 toCamera = normalize(g_cbPass.cameraPositionW - pIn.positionW);
+    return float4(computeLights(pIn.positionW, normal, toCamera), 1.0f);
 }

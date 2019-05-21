@@ -20,20 +20,17 @@ float3 computeBrdf(LightData light, float3 positionW, float3 normalW, float3 cam
     return ambientLight + nDotL * (diffuseLight + specularLight);
 }
 
-float3 computeLights(float3 positionW, float3 normalW)
+float3 computeLights(float3 positionW, float3 normalW, float3 toCameraNorm)
 {
     float3 totalLight = (float3) 0.0f;
     uint lightIndex = 0;
-
-    float3 toCamera = g_cbPass.cameraPositionW - positionW;
-    float3 cameraDirection = normalize(toCamera);
 
     for (uint i = 0; i < g_cbPass.directionalLightCount; ++i)
     {
         LightData curLight = g_cbPass.lightData[lightIndex];
         float3 toLight = -curLight.direction;
         float3 lightDirection = normalize(toLight);
-        totalLight += computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, cameraDirection, lightDirection);
+        totalLight += computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, toCameraNorm, lightDirection);
         ++lightIndex;
     }
 
@@ -44,7 +41,7 @@ float3 computeLights(float3 positionW, float3 normalW)
         float3 lightDirection = normalize(toLight);
         float distance = length(toLight);
         float falloff = 1.0f - saturate((distance - curLight.falloffBegin) / (curLight.falloffEnd - curLight.falloffBegin));
-        totalLight += falloff* computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, cameraDirection, lightDirection);
+        totalLight += falloff* computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, toCameraNorm, lightDirection);
         ++lightIndex;
     }
 
@@ -56,7 +53,7 @@ float3 computeLights(float3 positionW, float3 normalW)
         float distance = length(toLight);
         float falloff = 1.0f - saturate((distance - curLight.falloffBegin) / (curLight.falloffEnd - curLight.falloffBegin));
         float coneFactor = max(pow(dot(-lightDirection, normalize(curLight.direction)), curLight.spotPower), 0.0f);
-        totalLight += falloff * coneFactor * computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, cameraDirection, lightDirection);
+        totalLight += falloff * coneFactor * computeBrdf(g_cbPass.lightData[lightIndex], positionW, normalW, toCameraNorm, lightDirection);
         ++lightIndex;
     }
 
