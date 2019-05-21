@@ -75,6 +75,10 @@ namespace GeometryUtil
             for (size_t baseVertexId = 0; baseVertexId < 12u; ++baseVertexId)
             {
                 const auto& vertexPosition = baseVertexPositions[baseVertexId];
+                auto vertexNormal = baseVertexPositions[baseVertexId];
+                vertexNormal.x *= 1.0f / radius;
+                vertexNormal.y *= 1.0f / radius;
+                vertexNormal.z *= 1.0f / radius;
                 for (size_t i = 0; i < vertexDesc.attributeCount; ++i)
                 {
                     const auto& desc = vertexDesc.pAttributeDescs[i];
@@ -90,18 +94,15 @@ namespace GeometryUtil
                     {
                         DirectX::XMFLOAT2* uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
                         *uv = {
-                            DirectX::XMScalarACos(vertexPosition.y) / DirectX::XM_PI,
-                            0.5f * DirectX::XMScalarACos(vertexPosition.z) / DirectX::XM_PI,
+                            DirectX::XMScalarACos(vertexNormal.y) / DirectX::XM_PI,
+                            0.5f + std::atan2f(vertexNormal.x, vertexNormal.z) / DirectX::XM_2PI,
                         };
-                        if (vertexPosition.x < 0) {
-                            uv->y = 1.0f - uv->y;
-                        }
                     }
                     break;
                     case VertexAttributeType::NORMAL:
                     {
                         DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
-                        *normal = vertexPosition;
+                        *normal = vertexNormal;
                     }
                     break;
                     }
@@ -214,8 +215,10 @@ namespace GeometryUtil
                             DirectX::XMVECTOR xmvPos1 = DirectX::XMLoadFloat3(&triangleVertexPositions[(edgeIndex + 1) % 3]);
                             xmvPos0 = DirectX::XMVectorAdd(xmvPos0, xmvPos1);
                             xmvPos0 = DirectX::XMVector3Normalize(xmvPos0);
-                            xmvPos0 = DirectX::XMVectorScale(xmvPos0, radius);
+                            DirectX::XMFLOAT3 newVertexNormal;
+                            DirectX::XMStoreFloat3(&newVertexNormal, xmvPos0);
 
+                            xmvPos0 = DirectX::XMVectorScale(xmvPos0, radius);
                             DirectX::XMFLOAT3 newVertexPosition;
                             DirectX::XMStoreFloat3(&newVertexPosition, xmvPos0);
 
@@ -235,18 +238,15 @@ namespace GeometryUtil
                                 {
                                     DirectX::XMFLOAT2* uv = reinterpret_cast<DirectX::XMFLOAT2*>(curVertexByte + desc.attributeByteOffset);
                                     *uv = {
-                                        DirectX::XMScalarACos(newVertexPosition.y) / DirectX::XM_PI,
-                                        0.5f * DirectX::XMScalarACos(newVertexPosition.z) / DirectX::XM_PI,
+                                        DirectX::XMScalarACos(newVertexNormal.y) / DirectX::XM_PI,
+                                        0.5f + std::atan2f(newVertexNormal.x, newVertexNormal.z) / DirectX::XM_2PI,
                                     };
-                                    if (newVertexPosition.x < 0) {
-                                        uv->y = 1.0f - uv->y;
-                                    }
                                 }
                                 break;
                                 case VertexAttributeType::NORMAL:
                                 {
                                     DirectX::XMFLOAT3* normal = reinterpret_cast<DirectX::XMFLOAT3*>(curVertexByte + desc.attributeByteOffset);
-                                    *normal = newVertexPosition;
+                                    *normal = newVertexNormal;
                                 }
                                 break;
                                 }
