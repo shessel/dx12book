@@ -110,7 +110,9 @@ private:
     size_t m_waveRenderableIndex;
     Vertex m_wavesVertices[VERTICES_PER_SIDE][VERTICES_PER_SIDE];
 
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineState;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineStateOpaque;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPipelineStateAlphaBlend;
+
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pSrvHeap;

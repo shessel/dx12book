@@ -268,10 +268,10 @@ void LandAndWavesBlended::initialize()
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
         desc.BlendState.AlphaToCoverageEnable = false;
         desc.BlendState.IndependentBlendEnable = false;
-        desc.BlendState.RenderTarget[0].BlendEnable = true;
+        desc.BlendState.RenderTarget[0].BlendEnable = false;
         desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-        desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-        desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+        desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
         desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
         desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
         desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
@@ -365,7 +365,19 @@ void LandAndWavesBlended::initialize()
         desc.PS.pShaderBytecode = pPixelShader->GetBufferPointer();
         desc.PS.BytecodeLength = pPixelShader->GetBufferSize();
 
-        ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineState)));
+        ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineStateOpaque)));
+
+        desc.BlendState.RenderTarget[0].BlendEnable = true;
+        desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+        desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+
+        desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+        
+        ThrowIfFailed(m_pDevice->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_pPipelineStateAlphaBlend)));
     }
 
     ThrowIfFailed(m_pCommandList->Close());
@@ -534,7 +546,7 @@ void LandAndWavesBlended::render()
     curFrameResources.m_fenceValue = ++m_curFrameFenceValue;
 
     ThrowIfFailed(curFrameResources.m_pCommandAllocator->Reset());
-    ThrowIfFailed(m_pCommandList->Reset(curFrameResources.m_pCommandAllocator.Get(), m_pPipelineState.Get()));
+    ThrowIfFailed(m_pCommandList->Reset(curFrameResources.m_pCommandAllocator.Get(), m_pPipelineStateOpaque.Get()));
 
     {
         D3D12_RESOURCE_BARRIER presentToRenderTargetTransition = D3D12Util::TransitionBarrier(getCurrentBackBuffer(),
@@ -601,6 +613,7 @@ void LandAndWavesBlended::render()
         renderRenderable(renderable);
     }
 
+    m_pCommandList->SetPipelineState(m_pPipelineStateAlphaBlend.Get());
     for (const auto& renderable : m_transparentRenderables)
     {
         renderRenderable(renderable);
