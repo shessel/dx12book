@@ -16,7 +16,9 @@ float3 computeBrdf(LightData light, float3 positionW, float3 normalW, float3 cam
     float3 diffuseLight = g_cbMaterial.albedoColor.xyz * light.color;
 
     float m = (1.0f - g_cbMaterial.roughness) * 256.0f;
-    float3 specularLight = schlickFresnel(dot(lightDirection, halfway)) * ((m + 8.0f) / 8.0f) * pow(max(dot(normalW, halfway), 0.0f), m);
+    float3 fresnelTerm = schlickFresnel(dot(lightDirection, halfway));
+    float roughnessTerm = ((m + 8.0f) / 8.0f) * pow(max(dot(normalW, halfway), 0.0f), max(m, 0.0001f));
+    float3 specularLight = fresnelTerm * roughnessTerm;
     return ambientLight + nDotL * (diffuseLight + specularLight);
 }
 
@@ -52,7 +54,7 @@ float3 computeLights(LightData lightData[MAX_LIGHT_COUNT], float3 positionW, flo
         float3 lightDirection = normalize(toLight);
         float distance = length(toLight);
         float falloff = 1.0f - saturate((distance - curLight.falloffBegin) / (curLight.falloffEnd - curLight.falloffBegin));
-        float coneFactor = max(pow(max(dot(-lightDirection, normalize(curLight.direction)), 0.0f), curLight.spotPower), 0.0f);
+        float coneFactor = saturate(pow(max(dot(-lightDirection, normalize(curLight.direction)), 0.0f), curLight.spotPower));
         totalLight += falloff * coneFactor * computeBrdf(lightData[lightIndex], positionW, normalW, toCameraNorm, lightDirection);
         ++lightIndex;
     }
