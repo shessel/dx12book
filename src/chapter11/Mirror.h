@@ -131,9 +131,9 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pSrvHeap;
 
-    DirectX::XMFLOAT4 m_mirrorPlane;
+    DirectX::XMFLOAT4X4 m_mirrorMatrix;
 
-    ArcBallCamera m_camera = ArcBallCamera(7.0f, 0.0f, 0.5f);
+    ArcBallCamera m_camera = ArcBallCamera(15.0f, 0.5f, 0.5f);
     UINT64 m_curFrameFenceValue = 0u;
     Microsoft::WRL::ComPtr<ID3D12Fence> m_pFrameFence;
     

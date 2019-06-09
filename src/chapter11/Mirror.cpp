@@ -77,22 +77,22 @@ void Mirror::initialize()
         size_t wallIndexCount;
         GeometryUtil::calculateVertexIndexCountsSquare(VERTICES_PER_SIDE, wallVertexCount, wallIndexCount);
 
-        std::unique_ptr<Vertex[]> pLandVertices = std::make_unique<Vertex[]>(wallVertexCount);
-        std::unique_ptr<uint16_t[]> pLandIndices = std::make_unique<uint16_t[]>(wallIndexCount);
-        GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, pLandVertices.get(), pLandIndices.get());
+        std::unique_ptr<Vertex[]> pWallVertices = std::make_unique<Vertex[]>(wallVertexCount);
+        std::unique_ptr<uint16_t[]> pWallIndices = std::make_unique<uint16_t[]>(wallIndexCount);
+        GeometryUtil::createSquare(m_gridWidth, VERTICES_PER_SIDE, pWallVertices.get(), pWallIndices.get());
 
         // not thread safe
         size_t meshIndex = m_meshes.size();
         Mesh squareMesh;
-        squareMesh.createVertexBuffer(pLandVertices.get(), wallVertexCount, sizeof(Vertex), m_pCommandList.Get());
-        squareMesh.createIndexBuffer(pLandIndices.get(), wallIndexCount, sizeof(uint16_t), m_pCommandList.Get());
+        squareMesh.createVertexBuffer(pWallVertices.get(), wallVertexCount, sizeof(Vertex), m_pCommandList.Get());
+        squareMesh.createIndexBuffer(pWallIndices.get(), wallIndexCount, sizeof(uint16_t), m_pCommandList.Get());
         m_meshes.emplace_back(squareMesh);
 
-        // not thread safe
-        size_t textureIndex = m_textures.size();
-        m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/brown_mud_leaves_01_diff_1k_bc1.dds");
-
         {
+            // not thread safe
+            size_t textureIndex = m_textures.size();
+            m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/brown_mud_leaves_01_diff_1k_bc1.dds");
+
             // not thread safe
             Material wallMaterial;
             size_t materialIndex = m_materials.size();
@@ -105,79 +105,71 @@ void Mirror::initialize()
             wallMaterial.m_diffuseTextureIndex = textureIndex;
             m_materials.emplace_back(wallMaterial);
 
-            Renderable wallRenderable0;
-            wallRenderable0.m_meshIndex = meshIndex;
-            wallRenderable0.m_materialIndex = materialIndex;
+            Renderable floorRenderable;
+            floorRenderable.m_meshIndex = meshIndex;
+            floorRenderable.m_materialIndex = materialIndex;
+            floorRenderable.m_cbIndex = currentRenderableCbIndex++;
+            floorRenderable.m_startIndex = 0;
+            floorRenderable.m_baseVertex = 0;
+            floorRenderable.m_indexCount = static_cast<UINT>(wallIndexCount);
+            floorRenderable.m_model._42 = -m_gridWidth / 2.0f;
+            m_sceneRenderables.emplace_back(floorRenderable);
+
+            Renderable wallRenderable0 = floorRenderable;
             wallRenderable0.m_cbIndex = currentRenderableCbIndex++;
-            wallRenderable0.m_startIndex = 0;
-            wallRenderable0.m_baseVertex = 0;
-            wallRenderable0.m_indexCount = static_cast<UINT>(wallIndexCount);
-            wallRenderable0.m_model._42 = -m_gridWidth / 2.0f;
+            wallRenderable0.m_model = {
+                0.0f, 0.0f, 1.0f, 0.0f,
+                -1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, -1.0f, 0.0f, 0.0f,
+                m_gridWidth / 2.0f, 0.0f, 0.0f, 1.0f,
+            };
             m_sceneRenderables.emplace_back(wallRenderable0);
 
-            Renderable wallRenderable1 = wallRenderable0;
+            Renderable wallRenderable1 = floorRenderable;
             wallRenderable1.m_cbIndex = currentRenderableCbIndex++;
             wallRenderable1.m_model = {
+                0.0f, 0.0f, -1.0f, 0.0f,
                 1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f,
                 0.0f, -1.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f, 1.0f,
             };
-            wallRenderable1.m_model._43 = -m_gridWidth / 2.0f;
+            wallRenderable1.m_model._41 = -m_gridWidth / 2.0f;
             m_sceneRenderables.emplace_back(wallRenderable1);
 
-            Renderable wallRenderable2 = wallRenderable1;
+            Renderable wallRenderable2 = floorRenderable;
             wallRenderable2.m_cbIndex = currentRenderableCbIndex++;
             wallRenderable2.m_model = {
+                -1.0f, 0.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, -1.0f, 0.0f,
-                1.0f, 0.0f, 0.0f, 0.0f,
                 0.0f, -1.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f, 1.0f,
             };
-            wallRenderable2.m_model._41 = -m_gridWidth / 2.0f;
+            wallRenderable2.m_model._43 = m_gridWidth / 2.0f;
             m_sceneRenderables.emplace_back(wallRenderable2);
 
-            Renderable wallRenderable3 = wallRenderable1;
-            wallRenderable3.m_cbIndex = currentRenderableCbIndex++;
-            wallRenderable3.m_model = {
-                -1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f,
-            };
-            wallRenderable3.m_model._43 = m_gridWidth / 2.0f;
-            m_sceneRenderables.emplace_back(wallRenderable3);
-
-            Renderable wallRenderable4 = wallRenderable1;
-            wallRenderable4.m_cbIndex = currentRenderableCbIndex++;
-            wallRenderable4.m_model = {
-                0.0f, 0.0f, 1.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, -1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f,
-            };
-            wallRenderable4.m_model._41 = m_gridWidth / 2.0f;
-            wallRenderable4.m_model._42 = -m_gridWidth / 2.0f;
-            m_sceneRenderables.emplace_back(wallRenderable4);
-
-            Renderable wallRenderable5 = wallRenderable0;
-            wallRenderable5.m_cbIndex = currentRenderableCbIndex++;
-            wallRenderable5.m_model._22 = -1.0f;
-            wallRenderable5.m_model._33 = -1.0f;
-            wallRenderable5.m_model._42 = m_gridWidth / 2.0f;
-            m_sceneRenderables.emplace_back(wallRenderable5);
+            Renderable ceilingRenderable = floorRenderable;
+            ceilingRenderable.m_cbIndex = currentRenderableCbIndex++;
+            ceilingRenderable.m_model._22 = -1.0f;
+            ceilingRenderable.m_model._33 = -1.0f;
+            ceilingRenderable.m_model._42 = m_gridWidth / 2.0f;
+            m_sceneRenderables.emplace_back(ceilingRenderable);
         }
 
         {
+            // not thread safe
+            size_t textureIndex = m_textures.size();
+            m_textures.emplace_back().createFromFileAndUpload(m_pCommandList.Get(), L"data/textures/Grimy_bc3.dds");
+
             // not thread safe
             Material mirrorMaterial;
             size_t materialIndex = m_materials.size();
             mirrorMaterial.m_framesDirtyCount = FRAME_RESOURCES_COUNT;
             mirrorMaterial.m_cbIndex = currentMaterialCbIndex++;
-            mirrorMaterial.m_albedoColor = { 0.8f, 0.8f, 1.0f, 0.3f };
+            mirrorMaterial.m_fresnelR0 = { 0.1f, 0.1f, 0.1f };
+            mirrorMaterial.m_albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
             mirrorMaterial.m_roughness = 0.9f;
-            mirrorMaterial.texCoordTransformColumn0 = { 1.0f, 0.0f };
-            mirrorMaterial.texCoordTransformColumn1 = { 0.0f, 1.0f };
+            mirrorMaterial.texCoordTransformColumn0 = { 0.0f, 1.0f };
+            mirrorMaterial.texCoordTransformColumn1 = { 1.0f, 0.0f };
             mirrorMaterial.m_diffuseTextureIndex = textureIndex;
             m_materials.emplace_back(mirrorMaterial);
 
@@ -185,21 +177,20 @@ void Mirror::initialize()
             mirrorRenderable.m_meshIndex = meshIndex;
             mirrorRenderable.m_materialIndex = materialIndex;
             mirrorRenderable.m_cbIndex = currentRenderableCbIndex++;
+            mirrorRenderable.m_model = {
+                1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.0f, -1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, -m_gridWidth / 2.0f, 1.0f,
+            };
             mirrorRenderable.m_startIndex = 0;
             mirrorRenderable.m_baseVertex = 0;
             mirrorRenderable.m_indexCount = static_cast<UINT>(wallIndexCount);
-            mirrorRenderable.m_model = {
-                0.0f, 0.0f, 1.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, -1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f,
-            };
-            mirrorRenderable.m_model._41 = m_gridWidth / 2.0f;
-            mirrorRenderable.m_model._42 = m_gridWidth / 2.0f;
             m_mirrorRenderables.emplace_back(mirrorRenderable);
 
             // mirror normal is y-axis of mirrors coordinate frame
-            m_mirrorPlane = { mirrorRenderable.m_model._21, mirrorRenderable.m_model._22, mirrorRenderable.m_model._23, mirrorRenderable.m_model._42 };
+            DirectX::XMVECTOR mirrorPlane = { mirrorRenderable.m_model._21, mirrorRenderable.m_model._22, mirrorRenderable.m_model._23, -mirrorRenderable.m_model._43 };
+            DirectX::XMStoreFloat4x4(&m_mirrorMatrix, DirectX::XMMatrixReflect(mirrorPlane));
         }
     }
 
@@ -231,7 +222,7 @@ void Mirror::initialize()
         metalGridMaterial.m_cbIndex = currentMaterialCbIndex++;
         metalGridMaterial.m_fresnelR0 = { 0.1f, 0.1f, 0.1f };
         metalGridMaterial.m_albedoColor = { 1.0f, 1.0f, 1.0f, 0.5f };
-        metalGridMaterial.m_roughness = 0.0f;
+        metalGridMaterial.m_roughness = 0.5f;
         metalGridMaterial.texCoordTransformColumn0 = { 3.0f, 0.0f };
         metalGridMaterial.texCoordTransformColumn1 = { 0.0f, 3.0f };
         metalGridMaterial.m_diffuseTextureIndex = textureIndex;
@@ -245,17 +236,16 @@ void Mirror::initialize()
         metalGridSphereRenderable.m_baseVertex = 0;
         metalGridSphereRenderable.m_indexCount = static_cast<UINT>(sphereIndexCount);
         m_sceneRenderables.emplace_back(metalGridSphereRenderable);
+    }
 
-        Renderable mirroredMetalGridSphereRenderable;
-        mirroredMetalGridSphereRenderable.m_meshIndex = meshIndex;
-        mirroredMetalGridSphereRenderable.m_materialIndex = materialIndex;
-        mirroredMetalGridSphereRenderable.m_cbIndex = currentRenderableCbIndex++;
-        mirroredMetalGridSphereRenderable.m_startIndex = 0;
-        mirroredMetalGridSphereRenderable.m_baseVertex = 0;
-        DirectX::XMVECTOR mirrorPlane = DirectX::XMLoadFloat4(&m_mirrorPlane);
-        DirectX::XMStoreFloat4x4(&mirroredMetalGridSphereRenderable.m_model, DirectX::XMMatrixReflect(mirrorPlane));
-        mirroredMetalGridSphereRenderable.m_indexCount = static_cast<UINT>(sphereIndexCount);
-        m_mirroredSceneRenderables.emplace_back(mirroredMetalGridSphereRenderable);
+    for (const auto& renderable : m_sceneRenderables)
+    {
+        Renderable mirroredRenderable = renderable;
+        mirroredRenderable.m_cbIndex = currentRenderableCbIndex++;
+        DirectX::XMMATRIX modelMatrix = DirectX::XMLoadFloat4x4(&mirroredRenderable.m_model);
+        DirectX::XMMATRIX mirrorMatrix = DirectX::XMLoadFloat4x4(&m_mirrorMatrix);
+        DirectX::XMStoreFloat4x4(&mirroredRenderable.m_model, DirectX::XMMatrixMultiply(modelMatrix, mirrorMatrix));
+        m_mirroredSceneRenderables.emplace_back(mirroredRenderable);
     }
 
     {
@@ -566,7 +556,7 @@ void Mirror::update(float dt)
 
         LightConstants mirroredLightConstants = lightConstants;
 
-        DirectX::XMMATRIX mirrorMatrix = DirectX::XMMatrixReflect(DirectX::XMLoadFloat4(&m_mirrorPlane));
+        DirectX::XMMATRIX mirrorMatrix = DirectX::XMLoadFloat4x4(&m_mirrorMatrix);
 
         DirectX::XMVECTOR mirroredPosistion = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&mirroredLightConstants.lightData[0].position), mirrorMatrix);
         DirectX::XMStoreFloat3(&mirroredLightConstants.lightData[0].position, mirroredPosistion);
@@ -701,23 +691,23 @@ void Mirror::render()
     }
 
     m_pCommandList->SetPipelineState(m_pPipelineStateStencilWrite.Get());
+    m_pCommandList->OMSetStencilRef(1u);
     for (const auto& renderable : m_mirrorRenderables)
     {
-        m_pCommandList->OMSetStencilRef(1u);
         renderRenderable(renderable);
     }
 
+    m_pCommandList->SetPipelineState(m_pPipelineStateOpaqueMirrored.Get());
     D3D12_GPU_VIRTUAL_ADDRESS mirroredLightCbGpuAddress = lightCbGpuAddress;
     mirroredLightCbGpuAddress += curFrameResources.m_pCbLights->getElementSize();
     m_pCommandList->SetGraphicsRootConstantBufferView(2, mirroredLightCbGpuAddress);
-    m_pCommandList->SetPipelineState(m_pPipelineStateOpaqueMirrored.Get());
     for (const auto& renderable : m_mirroredSceneRenderables)
     {
         renderRenderable(renderable);
     }
 
-    m_pCommandList->SetGraphicsRootConstantBufferView(2, lightCbGpuAddress);
     m_pCommandList->SetPipelineState(m_pPipelineStateAlphaBlend.Get());
+    m_pCommandList->SetGraphicsRootConstantBufferView(2, lightCbGpuAddress);
     for (const auto& renderable : m_mirrorRenderables)
     {
         renderRenderable(renderable);
