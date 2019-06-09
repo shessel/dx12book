@@ -72,7 +72,7 @@ namespace D3D12Util
     {
         UINT shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #if defined(DEBUG) || defined (_DEBUG)
-        shaderFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+        shaderFlags |= D3DCOMPILE_DEBUG;
 #endif
         UINT effectFlags = 0;
         Microsoft::WRL::ComPtr<ID3DBlob> pCode, pError;
