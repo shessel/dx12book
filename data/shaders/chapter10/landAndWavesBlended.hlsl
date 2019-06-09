@@ -116,7 +116,7 @@ float4 ps(VertexOutput pIn) : SV_TARGET
     float distanceToCamera = length(toCamera);
 
     float3 normal = normalize(pIn.normalW);
-    float4 litColor = float4(computeLights(pIn.positionW, normal, toCamera/distanceToCamera), g_cbMaterial.albedoColor.a) * albedoColorTex;
+    float4 litColor = float4(computeLights(g_cbPass.lightData, pIn.positionW, normal, toCamera/distanceToCamera), g_cbMaterial.albedoColor.a) * albedoColorTex;
 
 #ifdef USE_FOG
     float fogFactor = saturate((distanceToCamera - g_cbPass.fogBegin) / (g_cbPass.fogEnd - g_cbPass.fogBegin));
