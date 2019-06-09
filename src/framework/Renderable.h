@@ -12,8 +12,9 @@ struct Renderable
         0.0f,0.0f,0.0f,1.0f,
     };
 
-    size_t m_meshIndex;
-    size_t m_materialIndex;
+    constexpr static size_t INVALID_INDEX = ~static_cast<size_t>(0);
+    size_t m_meshIndex = INVALID_INDEX;
+    size_t m_materialIndex = INVALID_INDEX;
 
     D3D_PRIMITIVE_TOPOLOGY m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
