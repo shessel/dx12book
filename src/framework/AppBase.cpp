@@ -67,7 +67,10 @@ namespace
     }
 }
 
-AppBase::AppBase(HINSTANCE hInstance) : m_hInstance(hInstance)
+AppBase::AppBase(HINSTANCE hInstance, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat) 
+    : m_hInstance(hInstance),
+    m_backbufferFormat(backBufferFormat),
+    m_depthStencilFormat(depthStencilFormat)
 {
     s_pAppInstance = this;
     createWindow();
@@ -120,8 +123,6 @@ void AppBase::createWindow()
 void AppBase::initializeDirect3D()
 {
     // general config
-    constexpr DXGI_FORMAT backbufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-    constexpr DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D32_FLOAT;
     constexpr UINT msaaSampleCount = 1;
     constexpr D3D_FEATURE_LEVEL minimumFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
@@ -156,7 +157,7 @@ void AppBase::initializeDirect3D()
     {
         D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msaaFeatureData = {};
         msaaFeatureData.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-        msaaFeatureData.Format = backbufferFormat;
+        msaaFeatureData.Format = m_backbufferFormat;
         msaaFeatureData.SampleCount = msaaSampleCount;
         ThrowIfFailed(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msaaFeatureData, sizeof(msaaFeatureData)));
 
@@ -182,7 +183,7 @@ void AppBase::initializeDirect3D()
         m_pSwapChain.Reset();
         DXGI_SWAP_CHAIN_DESC desc = {};
         desc.BufferCount = m_swapChainBufferCount;
-        desc.BufferDesc.Format = backbufferFormat;
+        desc.BufferDesc.Format = m_backbufferFormat;
         desc.BufferDesc.Width = m_windowWidth;
         desc.BufferDesc.Height = m_windowHeight;
         desc.BufferDesc.RefreshRate.Numerator = 60;
@@ -238,7 +239,7 @@ void AppBase::initializeDirect3D()
         desc.MipLevels = 1;
         desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
         desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        desc.Format = depthStencilFormat;
+        desc.Format = m_depthStencilFormat;
         desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         desc.SampleDesc.Count = msaaSampleCount;
         desc.SampleDesc.Quality = m_msaaQualityLevel;
@@ -246,7 +247,7 @@ void AppBase::initializeDirect3D()
         desc.Height = m_windowHeight;
 
         D3D12_CLEAR_VALUE clearValue = {};
-        clearValue.Format = depthStencilFormat;
+        clearValue.Format = m_depthStencilFormat;
         clearValue.DepthStencil.Depth = 1.0f;
 
         ThrowIfFailed(m_pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&m_depthStencilBuffer)));

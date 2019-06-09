@@ -15,7 +15,7 @@
 class AppBase
 {
 public:
-    AppBase(HINSTANCE hInstance);
+    AppBase(HINSTANCE hInstance, DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D32_FLOAT);
     ~AppBase();
     AppBase(const AppBase& other) = delete;
     AppBase(AppBase&& other) = delete;
@@ -51,6 +51,9 @@ protected:
     HWND m_hWnd;
     UINT m_windowWidth = 1280u;
     UINT m_windowHeight = 720u;
+
+    DXGI_FORMAT m_backbufferFormat;
+    DXGI_FORMAT m_depthStencilFormat;
 
     Microsoft::WRL::ComPtr<IDXGIFactory7> m_pFactory;
     Microsoft::WRL::ComPtr<ID3D12Device5> m_pDevice;
